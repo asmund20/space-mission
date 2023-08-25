@@ -1,3 +1,4 @@
+# seed is 59529
 import numpy as np
 
 box_size = 1e-11  # meters
