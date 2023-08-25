@@ -1,6 +1,7 @@
 # seed is 59529
 import numpy as np
 
-box_size = 1e-11  # meters
+# Lengdene paa boksen i x-, y- og z-retningen.
+lx, ly, lz = 1e-6, 1e-6, 1e-6  # meters
 T = 3e3  # kelvin
-N = 99  # number of particles
+N = 100  # number of particles
