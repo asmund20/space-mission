@@ -35,6 +35,7 @@ RUNTIME = 1e-8
 
 test_x = list()
 t_list = list()
+total_impulse_particles = 0
 
 while t < RUNTIME:
     for i in range(N):
@@ -42,6 +43,7 @@ while t < RUNTIME:
             pos[i, j] = pos[i, j] + vel[i, j]*dt
 
             if pos[i, j] < edge_tolerance or pos[i, j] > box[j]-edge_tolerance:
+                total_impulse_particles += abs(vel[i, j])*particle_mass
                 vel[i, j] = - vel[i, j]
 
     test_x.append(pos[1, 0])
@@ -51,3 +53,4 @@ while t < RUNTIME:
 
 plt.plot(t_list, test_x)
 plt.show()
+print(f"pressure_numerical = {total_impulse_particles/RUNTIME/2/(box[0]**2+box[1]**2+box[2]**2)}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*RUNTIME}")
