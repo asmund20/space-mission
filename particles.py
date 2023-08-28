@@ -56,6 +56,10 @@ plt.show()
 print(f"pressure_numerical = {total_impulse_particles/RUNTIME/2/(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
 
 E = 0
+total_velocity = 0
+
 for v in vel:
     E += 1/2*particle_mass*np.linalg.norm(v)**2
+    total_velocity += np.linalg.norm(v)
 print(f"total kinetic energy numerical: {E}\ntotal kinetic energy analytical: {3/2*cs.k*T*N}")
+print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
