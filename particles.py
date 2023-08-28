@@ -54,3 +54,8 @@ while t < RUNTIME:
 plt.plot(t_list, test_x)
 plt.show()
 print(f"pressure_numerical = {total_impulse_particles/RUNTIME/2/(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
+
+E = 0
+for v in vel:
+    E += 1/2*particle_mass*np.linalg.norm(v)**2
+print(f"total kinetic energy numerical: {E}\ntotal kinetic energy analytical: {3/2*cs.k*T*N}")
