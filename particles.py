@@ -6,7 +6,7 @@ import scipy.constants as cs
 import random as rand
 from ast2000tools.solar_system import SolarSystem
 
-#rand.seed(59529)
+rand.seed(59529)
 
 # Initialbetingelser
 # Lengdene paa boksen i x-, y- og z-retning
