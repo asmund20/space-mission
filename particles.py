@@ -43,7 +43,7 @@ while t < RUNTIME:
             pos[i, j] = pos[i, j] + vel[i, j]*dt
 
             if pos[i, j] < edge_tolerance or pos[i, j] > box[j]-edge_tolerance:
-                total_impulse_particles += abs(vel[i, j])*particle_mass
+                total_impulse_particles += 2*abs(vel[i, j])*particle_mass
                 vel[i, j] = - vel[i, j]
 
     test_x.append(pos[1, 0])
