@@ -15,7 +15,7 @@ edge_tolerance = 2e-9
 # Lengdene paa hullet i x- og y-retning
 sx, sy = 0.5*box[0], 0.5*box[1]
 T = 3e3  # kelvin
-N = 100  # number of particles
+N = 10000  # number of particles
 system = SolarSystem(59529)
 particle_mass = 3.32e-27  # kg
 
@@ -30,6 +30,7 @@ for i in range(N):
         vel[i, j] = rand.gauss(0, np.sqrt(cs.k*T/particle_mass))
 
 dt = 1e-12
+dt = 1e-11
 t = 0
 RUNTIME = 1e-8
 
