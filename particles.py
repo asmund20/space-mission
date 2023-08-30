@@ -12,10 +12,11 @@ rand.seed(59529)
 # Lengdene paa boksen i x-, y- og z-retning
 box = np.asarray([1e-6, 1e-6, 1e-6])  # meters
 edge_tolerance = 2e-9
-# Lengdene paa hullet i x- og y-retning
-sx, sy = 0.5*box[0], 0.5*box[1]
+# radius paa hullet
+r = box[0]/2/np.sqrt(np.pi)
 T = 3e3  # kelvin
 N = 10000  # number of particles
+N = 1000  # for raskere kjøring ved jobb
 system = SolarSystem(59529)
 particle_mass = 3.32e-27  # kg
 
@@ -37,13 +38,21 @@ RUNTIME = 1e-8
 test_x = list()
 t_list = list()
 total_impulse_particles = 0
+N_particles_escaped = 0
+total_impulse_escaped_particles = 0
 
 while t < RUNTIME:
     for i in range(N):
         for j in range(3):
             pos[i, j] = pos[i, j] + vel[i, j]*dt
 
-            if pos[i, j] < edge_tolerance or pos[i, j] > box[j]-edge_tolerance:
+            if pos[i, j] < edge_tolerance and j == 2 and np.linalg.norm(
+                    np.asarray([box[0]/2, box[1]/2, pos[i, j]])-pos[i]) < r:
+                N_particles_escaped += 1
+                total_impulse_escaped_particles -= 2*vel[i, j]*particle_mass
+
+            if pos[i, j] < edge_tolerance or \
+                    pos[i, j] > box[j]-edge_tolerance:
                 total_impulse_particles += 2*abs(vel[i, j])*particle_mass
                 vel[i, j] = - vel[i, j]
 
@@ -64,3 +73,6 @@ for v in vel:
     total_velocity += np.linalg.norm(v)
 print(f"total kinetic energy numerical: {E}\ntotal kinetic energy analytical: {3/2*cs.k*T*N}")
 print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
+
+print(f"mass comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
+print(f"thrust generated: {total_impulse_escaped_particles/RUNTIME} N")
