@@ -75,5 +75,6 @@ for v in vel:
 print(f"total kinetic energy numerical: {E}\ntotal kinetic energy analytical: {3/2*cs.k*T*N}")
 print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
 
-print(f"mass comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
+print(f"fuel comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
 print(f"thrust generated: {total_impulse_escaped_particles/RUNTIME} N")
+print("Her kan vi sjekke kraft generert analytisk ved hjelp av trykket og arealet til hullet")
