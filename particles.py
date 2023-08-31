@@ -1,4 +1,3 @@
-# seed er 59529
 import matplotlib.pyplot as plt
 import numpy as np
 # import scipy.stats as st
@@ -6,7 +5,9 @@ import scipy.constants as cs
 import random as rand
 from ast2000tools.solar_system import SolarSystem
 
-rand.seed(59529)
+seed = 59529
+
+rand.seed(seed)
 
 # Initialbetingelser
 # Lengdene paa boksen i x-, y- og z-retning
@@ -17,7 +18,7 @@ r = box[0]/2/np.sqrt(np.pi)
 T = 3e3  # kelvin
 N = 10000  # number of particles
 N = 1000  # for raskere kjøring ved jobb
-system = SolarSystem(59529)
+system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
 pos = np.zeros((N, 3))
