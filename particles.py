@@ -64,17 +64,18 @@ while t < RUNTIME:
 
 plt.plot(t_list, test_x)
 plt.show()
-print(f"pressure_numerical = {total_impulse_particles/RUNTIME/2/(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
+A = 2*(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])
+print(f"pressure_numerical = {total_impulse_particles/RUNTIME/A}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
 
-E = 0
+E = np.mean(0.5*particle_mass*np.linalg.norm(vel)**2)
 total_velocity = 0
-
 for v in vel:
-    E += 1/2*particle_mass*np.linalg.norm(v)**2
     total_velocity += np.linalg.norm(v)
+
 print(f"total kinetic energy numerical: {E}\ntotal kinetic energy analytical: {3/2*cs.k*T*N}")
 print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
 
 print(f"fuel comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
 print(f"thrust generated: {total_impulse_escaped_particles/RUNTIME} N")
+print(f"thrust = P*A_hull: {total_impulse_particles/RUNTIME/A*0.25*box[0]*box[1]}")
 print("Her kan vi sjekke kraft generert analytisk ved hjelp av trykket og arealet til hullet")
