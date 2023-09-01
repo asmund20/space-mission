@@ -101,34 +101,54 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
     fuel = np.zeros(int(t_max/dt))
     fuel[0] = fuel_mass - n_boxes*N*particle_mass
 
+    esc_vel = np.zeros(int(t_max/dt))
+
     
     t = 0
     i = 0
     while i < int(t_max/dt)-1:
-        esc_vel = np.sqrt((2*cs.G*Mz)/z[i])
+
+        esc_vel[i] = np.sqrt((2*cs.G*Mz)/z[i])
         gravity = -cs.G*mass[i]*Mz/(z[i]**2)
         az[i] = (thrust + gravity)/mass[i]
+        if vz[i] >= esc_vel[i]:
+            break
 
         vz[i+1] = vz[i] + az[i]*dt
         z[i+1] = z[i] + vz[i+1]*dt
 
         mass[i+1] = mass[i] - fuel_consumtion*dt
         fuel[i+1] = fuel[i] - fuel_consumtion*dt
-        if vz[i+1] >= esc_vel:
-            break
 
         t += dt
         i += 1
     
-    return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1]
+    return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1]
 
-t, z, vz, az, mass, fuel = simulate_launch(1000, 12000, 2.7e16)
+t, z, vz, az, mass, fuel, esc_vel = simulate_launch(1000, 12000, 2.7e16)
 print(fuel[-1])
 time = np.linspace(0,t,len(z))
-fig, axs = plt.subplots(4)
-axs[0].plot(time, z)
-axs[1].plot(time, vz)
-axs[2].plot(time, az)
-axs[3].plot(time, fuel)
+
+fig, axs = plt.subplots(3)
+fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
+
+axs[0].plot(time, z, 'r-', label='Avstand fra sentrum til raketten')
+axs[0].set_ylabel('Avstand [m]')
+axs[0].set_xlabel('Tid [s]')
+axs[0].legend()
+
+axs[1].plot(time, vz, 'g-', label='Fart til raketten')
+axs[1].plot(time, esc_vel, 'k:', label='Unnsplipningshastighet')
+axs[1].set_ylabel('Fart [m/s]')
+axs[1].set_xlabel('Tid [s]')
+axs[1].legend()
+
+axs[2].plot(time, az, 'b-', label='Akselerasjonen til raketten')
+axs[2].set_ylabel('Akselerasjon [m/s^2]')
+axs[2].set_xlabel('Tid [s]')
+axs[2].legend()
+
+
+plt.tight_layout()
 plt.show()
 
