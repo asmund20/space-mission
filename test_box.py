@@ -17,7 +17,7 @@ edge_tolerance = 2e-9
 r = box[0]/2/np.sqrt(np.pi)
 T = 3e3  # kelvin
 N = 10000  # number of particles
-N = 1000  # for raskere kjøring ved jobb
+#N = 1000  # for raskere kjøring ved jobb
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
@@ -67,12 +67,13 @@ plt.show()
 A = 2*(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])
 print(f"pressure_numerical = {total_impulse_particles/RUNTIME/A}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
 
-E = np.mean(0.5*particle_mass*np.linalg.norm(vel)**2)
+total_E = 0
 total_velocity = 0
 for v in vel:
     total_velocity += np.linalg.norm(v)
+    total_E += 1/2*particle_mass*np.linalg.norm(v)**2
 
-print(f"average kinetic energy numerical: {E}\naverage kinetic energy analytical: {3/2*cs.k*T}")
+print(f"average kinetic energy numerical: {total_E/N}\naverage kinetic energy analytical: {3/2*cs.k*T}")
 print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
 
 print(f"fuel comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
