@@ -4,6 +4,8 @@ import numpy as np
 import scipy.constants as cs
 import random as rand
 from ast2000tools.solar_system import SolarSystem
+from ast2000tools.space_mission import SpaceMission
+import ast2000tools
 
 seed = 59529
 
@@ -69,19 +71,64 @@ def microbox_performance(N):
     return fuel_consumtion, thrust
 
 # Rakettmasse
-mr = 6e4
+mr = SpaceMission(seed).spacecraft_mass
 # Masse til Zeron
 Mz = system.masses[0]*ast2000tools.constants.m_sun
 # Radius Zeron
 Rz = system.radii[0]*1e3
 
-# Tyngdekraft paa overflaten av Zeron
-gravity_surface_zeron = cs.G*mr*Mz/(Rz**2)
-
 def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
-    fuel_consumtion, thrust = microbox_performance(N)*n_boxes
+    # fuel_consumtion, thrust = np.array(microbox_performance(N))*n_boxes
+    fuel_consumtion, thrust = np.array((1.13544e-15, 9.899740313191332e-12))*n_boxes
 
-    total_mass = mr + fuel_mass
+    # Max tid for aa oppnaa unnslipningshastighet er 20 min
+    t_max = 1200 # s
+    dt = 1e-3 # s
+
+    # Vertikal posisjon
+    z = np.zeros(int(t_max/dt))
+    z[0] = Rz
+
+    # Fart i vertikal retning
+    vz = np.zeros(int(t_max/dt))
+
+    # Akselerasjonen
+    az = np.zeros(int(t_max/dt))
+
+    # Masse
+    mass = np.zeros(int(t_max/dt))
+    mass[0] = mr + fuel_mass
+    fuel = np.zeros(int(t_max/dt))
+    fuel[0] = fuel_mass - n_boxes*N*particle_mass
+
     
+    t = 0
+    i = 0
+    while i < int(t_max/dt)-1:
+        esc_vel = np.sqrt((2*cs.G*Mz)/z[i])
+        gravity = -cs.G*mass[i]*Mz/(z[i]**2)
+        az[i] = (thrust + gravity)/mass[i]
 
-print(microbox_performance(N))
+        vz[i+1] = vz[i] + az[i]*dt
+        z[i+1] = z[i] + vz[i+1]*dt
+
+        mass[i+1] = mass[i] - fuel_consumtion*dt
+        fuel[i+1] = fuel[i] - fuel_consumtion*dt
+        if vz[i+1] >= esc_vel:
+            break
+
+        t += dt
+        i += 1
+    
+    return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1]
+
+t, z, vz, az, mass, fuel = simulate_launch(1000, 12000, 2.7e16)
+print(fuel[-1])
+time = np.linspace(0,t,len(z))
+fig, axs = plt.subplots(4)
+axs[0].plot(time, z)
+axs[1].plot(time, vz)
+axs[2].plot(time, az)
+axs[3].plot(time, fuel)
+plt.show()
+
