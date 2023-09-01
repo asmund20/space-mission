@@ -17,7 +17,7 @@ edge_tolerance = 2e-9
 r = box[0]/2/np.sqrt(np.pi)
 T = 3e3  # kelvin
 N = 10000  # number of particles
-#N = 1000  # for raskere kjøring ved jobb
+N = 1000  # for raskere kjøring ved jobb
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
@@ -63,6 +63,9 @@ while t < RUNTIME:
     t += dt
 
 plt.plot(t_list, test_x)
+plt.title("x-posisjonen til en partikkel")
+plt.ylabel("x-posisjon [m]")
+plt.xlabel("tid [s]")
 plt.show()
 A = 2*(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])
 print(f"pressure_numerical = {total_impulse_particles/RUNTIME/A}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
