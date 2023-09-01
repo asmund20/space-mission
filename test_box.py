@@ -79,4 +79,3 @@ print(f"average velocity numerical: {total_velocity/N}\naverage velocity analyti
 print(f"fuel comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
 print(f"thrust generated: {total_impulse_escaped_particles/RUNTIME} N")
 print(f"thrust = P*A_hull: {total_impulse_particles/RUNTIME/A*0.25*box[0]*box[1]}")
-print("Her kan vi sjekke kraft generert analytisk ved hjelp av trykket og arealet til hullet")
