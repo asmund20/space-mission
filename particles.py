@@ -72,7 +72,7 @@ total_velocity = 0
 for v in vel:
     total_velocity += np.linalg.norm(v)
 
-print(f"total kinetic energy numerical: {E}\ntotal kinetic energy analytical: {3/2*cs.k*T*N}")
+print(f"average kinetic energy numerical: {E}\naverage kinetic energy analytical: {3/2*cs.k*T}")
 print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
 
 print(f"fuel comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
