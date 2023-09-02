@@ -66,7 +66,7 @@ plt.plot(t_list, test_x)
 plt.title("x-posisjonen til en partikkel")
 plt.ylabel("x-posisjon [m]")
 plt.xlabel("tid [s]")
-plt.show()
+#plt.show()
 A = 2*(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])
 print(f"pressure_numerical = {total_impulse_particles/RUNTIME/A}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
 
@@ -76,9 +76,24 @@ for v in vel:
     total_velocity += np.linalg.norm(v)
     total_E += 1/2*particle_mass*np.linalg.norm(v)**2
 
-print(f"average kinetic energy numerical: {total_E/N}\naverage kinetic energy analytical: {3/2*cs.k*T}")
+avg_E_num = total_E/N
+avg_E_ana = 3/2*cs.k*T
+avg_v_num = total_velocity/N
+avg_v_ana = np.sqrt(8*cs.k*T/np.pi/particle_mass)
+p_num = total_impulse_particles/RUNTIME/A
+p_ana = N/box[0]/box[1]/box[2]*cs.k*T
+F_num = total_impulse_escaped_particles/RUNTIME
+F_ana = 0.25*box[0]**2*p_ana
+
+print(f"average kinetic energy numerical: {avg_E_num}\naverage kinetic energy analytical: {avg_E_ana}")
 print(f"average velocity numerical: {total_velocity/N}\naverage velocity analytical: {np.sqrt(8*cs.k*T/np.pi/particle_mass)}")
 
 print(f"fuel comsumption: {N_particles_escaped*particle_mass/RUNTIME} kg/s")
 print(f"thrust generated: {total_impulse_escaped_particles/RUNTIME} N")
 print(f"thrust = P*A_hull: {total_impulse_particles/RUNTIME/A*0.25*box[0]*box[1]}")
+
+print("\n")
+print(f"Precision E: {(avg_E_num-avg_E_ana)/avg_E_ana}")
+print(f"Precision v: {(avg_v_num-avg_v_ana)/avg_v_ana}")
+print(f"Precision p: {(p_num-p_ana)/p_ana}")
+print(f"Precision f: {(F_num-F_ana)/F_ana}")
