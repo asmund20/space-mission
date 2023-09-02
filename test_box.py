@@ -17,7 +17,7 @@ edge_tolerance = 2e-9
 r = box[0]/2/np.sqrt(np.pi)
 T = 3e3  # kelvin
 N = 10000  # number of particles
-N = 1000  # for raskere kjøring ved jobb
+#N = 1000  # for raskere kjøring ved jobb
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
@@ -93,7 +93,9 @@ print(f"thrust generated: {total_impulse_escaped_particles/RUNTIME} N")
 print(f"thrust = P*A_hull: {total_impulse_particles/RUNTIME/A*0.25*box[0]*box[1]}")
 
 print("\n")
+print(f"Number of particles: {N}")
 print(f"Precision E: {(avg_E_num-avg_E_ana)/avg_E_ana}")
 print(f"Precision v: {(avg_v_num-avg_v_ana)/avg_v_ana}")
 print(f"Precision p: {(p_num-p_ana)/p_ana}")
-print(f"Precision f: {(F_num-F_ana)/F_ana}")
+print(f"Precision F: {(F_num-F_ana)/F_ana}")
+print(f"thrust generated per kg of escaped mass: {F_num/N_particles_escaped/particle_mass}")
