@@ -16,10 +16,8 @@ rand.seed(seed)
 box = np.asarray([1e-6, 1e-6, 1e-6])  # meters
 edge_tolerance = 2e-9
 # radius paa hullet
-r = box[0]/2/np.sqrt(np.pi)
-T = 3e3  # kelvin
-N = 10000  # number of particles
-N = 1000  # for raskere kjøring ved jobb
+#N = 10000  # number of particles
+#N = 1000  # for raskere kjøring ved jobb
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
@@ -30,6 +28,8 @@ def fuel_consumed(F, consumption, m, dv) -> float:
 
 
 def microbox_performance(N):
+    r = box[0]/2/np.sqrt(np.pi)
+    T = 3e3  # kelvin
     """Finner thrust og drivstoff brent av hver mikroboks"""
     pos = np.zeros((N, 3))
     vel = np.zeros((N, 3))
@@ -78,8 +78,8 @@ Mz = system.masses[0]*ast2000tools.constants.m_sun
 Rz = system.radii[0]*1e3
 
 def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
-    # fuel_consumtion, thrust = np.array(microbox_performance(N))*n_boxes
-    fuel_consumtion, thrust = np.array((1.13544e-15, 9.899740313191332e-12))*n_boxes
+    fuel_consumtion, thrust = np.array(microbox_performance(N))*n_boxes
+    #fuel_consumtion, thrust = np.array((1.13544e-15, 9.899740313191332e-12))*n_boxes
 
     # Max tid for aa oppnaa unnslipningshastighet er 20 min
     t_max = 1200 # s
@@ -103,7 +103,6 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
 
     esc_vel = np.zeros(int(t_max/dt))
 
-    
     t = 0
     i = 0
     while i < int(t_max/dt)-1:
@@ -122,12 +121,13 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
 
         t += dt
         i += 1
-    
+
     return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1]
 
-t, z, vz, az, mass, fuel, esc_vel = simulate_launch(1000, 12000, 2.7e16)
+
+t, z, vz, az, mass, fuel, esc_vel = simulate_launch(100, 12000, 2.7e15)
 print(fuel[-1])
-time = np.linspace(0,t,len(z))
+time = np.linspace(0, t, len(z))
 
 fig, axs = plt.subplots(3)
 fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
@@ -151,4 +151,3 @@ axs[2].legend()
 
 plt.tight_layout()
 plt.show()
-
