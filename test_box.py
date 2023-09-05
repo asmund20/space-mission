@@ -5,6 +5,7 @@ import scipy.constants as cs
 import random as rand
 from ast2000tools.solar_system import SolarSystem
 
+# vår seed fra brukernavn
 seed = 59529
 
 rand.seed(seed)
@@ -16,8 +17,7 @@ edge_tolerance = 2e-9
 # radius paa hullet
 r = box[0]/2/np.sqrt(np.pi)
 T = 3e3  # kelvin
-N = 10000  # number of particles
-#N = 1000  # for raskere kjøring ved jobb
+N = 1000  # antall partikler
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
@@ -31,13 +31,14 @@ for i in range(N):
         pos[i, j] = rand.uniform(0, box[j])
         vel[i, j] = rand.gauss(0, np.sqrt(cs.k*T/particle_mass))
 
-dt = 1e-12
 dt = 1e-11
 t = 0
 RUNTIME = 1e-8
 
+# for å plotte x-posisjonen til en tilfeldig partikkel
 test_x = list()
 t_list = list()
+
 total_impulse_particles = 0
 N_particles_escaped = 0
 total_impulse_escaped_particles = 0
@@ -45,13 +46,16 @@ total_impulse_escaped_particles = 0
 while t < RUNTIME:
     for i in range(N):
         for j in range(3):
+            # oppdaterer posisjonen
             pos[i, j] = pos[i, j] + vel[i, j]*dt
 
+            # sjekker om partikkelen traff hullet og håndterer utflukt
             if pos[i, j] < edge_tolerance and j == 2 and np.linalg.norm(
                     np.asarray([box[0]/2, box[1]/2, pos[i, j]])-pos[i]) < r:
                 N_particles_escaped += 1
                 total_impulse_escaped_particles -= 2*vel[i, j]*particle_mass
 
+            # sjekker for kollisjon med vegg og spretter partikkelen inn igjen
             if pos[i, j] < edge_tolerance or \
                     pos[i, j] > box[j]-edge_tolerance:
                 total_impulse_particles += 2*abs(vel[i, j])*particle_mass
