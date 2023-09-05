@@ -126,7 +126,6 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
     return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1]
 
 t, z, vz, az, mass, fuel, esc_vel = simulate_launch(1000, 12000, 2.7e16)
-print(vz[-1])
 
 # time = np.linspace(0,t,len(z))
 
