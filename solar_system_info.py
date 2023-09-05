@@ -10,9 +10,9 @@ for planet_idx in range(system.number_of_planets):
 
 print("info om solsystemet:")
 print(f"""
-      Startposisjon {system.initial_positions[0, 0]},{system.initial_positions[1, 0]}
-      eksentrisitet: {system.eccentricities[0]}
-      phi: {system.initial_orbital_angles[0]}
-      banevinkel: {system.aphelion_angles[0]}
-      starthastighet: {system.initial_velocities[0, 0],system.initial_velocities[1, 0]}
-      døgn: {system.rotational_periods[0]}""")
+Startposisjon {system.initial_positions[0, 0]},{system.initial_positions[1, 0]}
+eksentrisitet: {system.eccentricities[0]}
+phi: {system.initial_orbital_angles[0]}
+banevinkel: {system.aphelion_angles[0]}
+starthastighet: {system.initial_velocities[0, 0],system.initial_velocities[1, 0]}
+døgn: {system.rotational_periods[0]}""")
