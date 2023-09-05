@@ -126,29 +126,30 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
     return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1]
 
 t, z, vz, az, mass, fuel, esc_vel = simulate_launch(1000, 12000, 2.7e16)
-print(fuel[-1])
-time = np.linspace(0,t,len(z))
+print(vz[-1])
 
-fig, axs = plt.subplots(3)
-fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
+# time = np.linspace(0,t,len(z))
 
-axs[0].plot(time, z, 'r-', label='Avstand fra sentrum til raketten')
-axs[0].set_ylabel('Avstand [m]')
-axs[0].set_xlabel('Tid [s]')
-axs[0].legend()
+# fig, axs = plt.subplots(3)
+# fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
 
-axs[1].plot(time, vz, 'g-', label='Fart til raketten')
-axs[1].plot(time, esc_vel, 'k:', label='Unnsplipningshastighet')
-axs[1].set_ylabel('Fart [m/s]')
-axs[1].set_xlabel('Tid [s]')
-axs[1].legend()
+# axs[0].plot(time, z, 'r-', label='Avstand fra sentrum til raketten')
+# axs[0].set_ylabel('Avstand [m]')
+# axs[0].set_xlabel('Tid [s]')
+# axs[0].legend()
 
-axs[2].plot(time, az, 'b-', label='Akselerasjonen til raketten')
-axs[2].set_ylabel('Akselerasjon [m/s^2]')
-axs[2].set_xlabel('Tid [s]')
-axs[2].legend()
+# axs[1].plot(time, vz, 'g-', label='Fart til raketten')
+# axs[1].plot(time, esc_vel, 'k:', label='Unnsplipningshastighet')
+# axs[1].set_ylabel('Fart [m/s]')
+# axs[1].set_xlabel('Tid [s]')
+# axs[1].legend()
+
+# axs[2].plot(time, az, 'b-', label='Akselerasjonen til raketten')
+# axs[2].set_ylabel('Akselerasjon [m/s^2]')
+# axs[2].set_xlabel('Tid [s]')
+# axs[2].legend()
 
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
 
