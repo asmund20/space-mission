@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt, patches
 import numpy as np
 import scipy.constants as cs
 from ast2000tools.solar_system import SolarSystem
@@ -57,12 +57,30 @@ for i in range(len(r1_norm)-1):
 r = utils.m_to_AU(r0+r1)
 r0 = utils.m_to_AU(r0)
 
-print(f'Final velocity rocket: {(r[-1]-r[-2])/utils.s_to_yr(dt)} AU/yr')
+# Slutthastighet i AU/yr
+vf = (r[-1]-r[-2])/utils.s_to_yr(dt)
+
+print(f'Final velocity rocket: {vf} AU/yr')
 print(f'Final position rocket: {r[-1]} AU')
 
-# Plotte sola, banen til Zeron og raketten
-plt.plot(0,0,'yo', markersize=10)
-plt.axis('equal')
-plt.plot(r0[:,0], r0[:,1])
-plt.plot(r[:,0], r[:,1])
+# Plotte banen til Zeron og raketten
+fig = plt.figure()
+fig.suptitle('Banene fulgt av raketten og Zeron i det inertielle referansesytemet')
+ax = fig.add_subplot()
+zeron = patches.Circle((r0[-1,0], r0[-1,1]), radius=r[0,0]-r0[0,0], color='orange', label='Zeron')
+ax.add_patch(zeron)
+
+l = 1.7*r0[-1,1]
+ax.set_ylim(-l, l)
+ax.set_xlim(r0[0,0]-l, r0[0,0] + l)
+ax.set_xlabel('x [AU]')
+ax.set_ylabel('y [AU]')
+
+# ax.plot(r0[-1,0], r0[-1,1], 'o', color='orange', markersize=375, label='Zeron')
+ax.plot(r0[:,0], r0[:,1], 'k:', label='Banen til Zeron')
+ax.plot(r[:,0], r[:,1], 'k', label='Banen til raketten')
+ax.quiver(r[-1,0], r[-1,1], vf[0],vf[1], color='red', scale=50, label='Hastighetsvektoren etter fullført oppskytning')
+
+plt.legend()
+
 plt.show()
