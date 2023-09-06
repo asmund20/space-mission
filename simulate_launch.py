@@ -143,8 +143,6 @@ with open('rocket_position.txt', 'w') as outfile:
     for pos in z:
         outfile.write(f'{pos}\n')
 
-time = np.linspace(0, t, len(z))
-
 fig, axs = plt.subplots(3)
 fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
 
