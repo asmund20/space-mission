@@ -1,3 +1,7 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
 import numpy as np
 import scipy.constants as cs
 import random as rand
@@ -13,11 +17,6 @@ rand.seed(seed)
 
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
-
-
-# Denne funksjonen beregner hvor mye drivstoff som forbrennes
-def fuel_consumed(F, consumption, m, dv) -> float:
-    return consumption*m*dv/F
 
 
 # finner kraft generert og drivstoffforbruk i kg/s
@@ -51,8 +50,9 @@ def microbox_performance(N):
     RUNTIME = 1e-8
     while t < RUNTIME:
         for i in range(N):
+            # Oppdatere posisjonen
+            pos[i] = pos[i] + vel[i]*dt
             for j in range(3):
-                pos[i, j] = pos[i, j] + vel[i, j]*dt
 
                 # Sjekker om partikkelen havnet ut av hullet
                 if pos[i, j] < edge_tolerance and j == 2 and np.linalg.norm(
@@ -65,6 +65,7 @@ def microbox_performance(N):
                         pos[i, j] > box[j]-edge_tolerance:
                     total_impulse_particles += 2*abs(vel[i, j])*particle_mass
                     vel[i, j] = - vel[i, j]
+
         t += dt
 
     fuel_consumtion = N_particles_escaped*particle_mass/RUNTIME
@@ -73,7 +74,7 @@ def microbox_performance(N):
     return fuel_consumtion, thrust
 
 
-def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
+def simulate_launch(N, fuel_mass, n_boxes):
     # Rakettmasse
     mr = SpaceMission(seed).spacecraft_mass
     # Masse til Zeron
@@ -169,8 +170,6 @@ plt.ylabel("drivstoff [kg]")
 plt.xlabel("tid [s]")
 plt.suptitle(f"Drivstoff i tanken\ngjenværende drivstoff: {fuel[-1]:.1f} kg")
 plt.legend()
-
-print(az[-1])
 
 plt.tight_layout()
 plt.show()

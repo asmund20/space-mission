@@ -1,3 +1,7 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
 from matplotlib import pyplot as plt, patches
 import numpy as np
 import scipy.constants as cs
@@ -38,18 +42,20 @@ r1[0] = r1_norm[0], 0
 t = 0
 dt = 1e-3 # s
 
-# Massen til stjerna
+# Massen til stjerna Stellaris Skarsgaard
 M = system.star_mass*astconst.m_sun
 
 
 for i in range(len(r1_norm)-1):
 
+    # Regner r1 komponenten til posisjonen
     r1[i+1] = np.array([r1_norm[i+1]*np.cos(omega*t), r1_norm[i+1]*np.sin(omega*t)])
 
+    # Numerisk integrasjon
     # Akselerasjonen til Zeron
     a = - cs.G*M*r0[i]/np.linalg.norm(r0[i])**3
     v0[i+1] = v0[i]+a*dt
-    r0[i+1] = r0[i]+v0[i+1]*dt
+    r0[i+1] = r0[i]+v0[i+1]*dt # Euler-Cromer
 
     t += dt
 
