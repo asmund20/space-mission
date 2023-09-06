@@ -81,7 +81,7 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
     # Radius Zeron
     Rz = system.radii[0]*1e3
 
-    fuel_consumtion, thrust = np.array(microbox_performance(N))*n_boxes
+    fuel_consumption, thrust = np.array(microbox_performance(N))*n_boxes
 
     # Max tid for aa oppnaa unnslipningshastighet er 20 min
     t_max = 1200  # s
@@ -129,16 +129,16 @@ def simulate_launch(N, fuel_mass, n_boxes, consume_fuel=True):
         z[i+1] = z[i] + vz[i+1]*dt
 
         # oppddaterer rakettens totale masse og mengdden drivstoff
-        mass[i+1] = mass[i] - fuel_consumtion*dt
-        fuel[i+1] = fuel[i] - fuel_consumtion*dt
+        mass[i+1] = mass[i] - fuel_consumption*dt
+        fuel[i+1] = fuel[i] - fuel_consumption*dt
 
         t += dt
         i += 1
 
-    return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1]
+    return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption
 
 
-t, z, vz, az, mass, fuel, esc_vel = simulate_launch(1000, 12000, 2.7e16)
+t, z, vz, az, mass, fuel, esc_vel, fuel_consumption = simulate_launch(1000, 12000, 2.7e16)
 with open('rocket_position.txt', 'w') as outfile:
     for pos in z:
         outfile.write(f'{pos}\n')
@@ -164,6 +164,12 @@ axs[2].set_ylabel('Akselerasjon [m/s^2]')
 axs[2].set_xlabel('Tid [s]')
 axs[2].legend()
 
+plt.figure()
+plt.plot(time, mass, color='orange', label=f"forbruk: {fuel_consumption:.1f} kg/s")
+plt.ylabel("drivstoff [kg]")
+plt.xlabel("tid [s]")
+plt.suptitle(f"Drivstoff i tanken\ngjenværende drivstoff: {fuel[-1]:.1f} kg")
+plt.legend()
 
 plt.tight_layout()
 plt.show()
