@@ -67,13 +67,15 @@ print(f'Final position rocket: {r[-1]} AU')
 fig = plt.figure()
 fig.suptitle('Banene fulgt av raketten og Zeron i det inertielle referansesytemet')
 ax = fig.add_subplot()
-zeron = patches.Circle((r0[-1,0], r0[-1,1]), radius=r[0,0]-r0[0,0], color='orange', label='Zeron')
+zeron = patches.Circle((r0[-1,0], r0[-1,1]), radius=r[0,0]-r0[0,0], color='green', label='Zeron')
 ax.add_patch(zeron)
 
 l = 1.7*r0[-1,1]
 ax.set_ylim(-l, l)
 ax.set_xlim(r0[0,0]-l, r0[0,0] + l)
 ax.set_xlabel('x [AU]')
+labels = [item.get_text() for item in ax.get_xticklabels()]
+ax.set_xticklabels([str(round(float(label), 6)) for label in labels], rotation=-45)
 ax.set_ylabel('y [AU]')
 
 # ax.plot(r0[-1,0], r0[-1,1], 'o', color='orange', markersize=375, label='Zeron')
