@@ -143,6 +143,7 @@ with open('rocket_position.txt', 'w') as outfile:
     for pos in z:
         outfile.write(f'{pos}\n')
 
+time = np.linspace(0, t, len(z))
 fig, axs = plt.subplots(3)
 fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
 
@@ -168,6 +169,8 @@ plt.ylabel("drivstoff [kg]")
 plt.xlabel("tid [s]")
 plt.suptitle(f"Drivstoff i tanken\ngjenværende drivstoff: {fuel[-1]:.1f} kg")
 plt.legend()
+
+print(az[-1])
 
 plt.tight_layout()
 plt.show()
