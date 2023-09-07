@@ -90,5 +90,6 @@ ax.plot(r[:,0], r[:,1], 'k', label='Banen til raketten')
 ax.quiver(r[-1,0], r[-1,1], vf[0],vf[1], color='red', scale=50, label='Hastighetsvektoren etter fullført oppskytning')
 
 plt.legend()
+plt.tight_layout()
 
 plt.show()

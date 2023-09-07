@@ -70,7 +70,7 @@ plt.plot(t_list, test_x)
 plt.title("x-posisjonen til en partikkel")
 plt.ylabel("x-posisjon [m]")
 plt.xlabel("tid [s]")
-#plt.show()
+plt.show()
 A = 2*(box[0]*box[1]+box[0]*box[2]+box[1]*box[2])
 print(f"pressure_numerical = {total_impulse_particles/RUNTIME/A}\npressure_analytical = {N/box[0]/box[1]/box[2]*cs.k*T}")
 
