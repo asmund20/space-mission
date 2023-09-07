@@ -1,6 +1,9 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
 import matplotlib.pyplot as plt
 import numpy as np
-# import scipy.stats as st
 import scipy.constants as cs
 import random as rand
 from ast2000tools.solar_system import SolarSystem
@@ -45,10 +48,10 @@ total_impulse_escaped_particles = 0
 
 while t < RUNTIME:
     for i in range(N):
-        for j in range(3):
-            # oppdaterer posisjonen
-            pos[i, j] = pos[i, j] + vel[i, j]*dt
+        # oppdaterer posisjonen
+        pos[i] = pos[i] + vel[i]*dt
 
+        for j in range(3):
             # sjekker om partikkelen traff hullet og håndterer utflukt
             if pos[i, j] < edge_tolerance and j == 2 and np.linalg.norm(
                     np.asarray([box[0]/2, box[1]/2, pos[i, j]])-pos[i]) < r:
