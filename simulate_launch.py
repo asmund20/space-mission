@@ -24,6 +24,8 @@ def microbox_performance(N):
     # Initialbetingelser
     # Lengdene paa boksen i x-, y- og z-retning
     box = np.asarray([1e-6, 1e-6, 1e-6])  # meters
+    # Lite intervall der vi betrakter partikler nærmere
+    # veggen enn dette for å ha truffet
     edge_tolerance = 2e-9
     # radius paa hullet, utledet fra arealet til en sirkel der
     # A = 0.25 L^2
@@ -44,6 +46,10 @@ def microbox_performance(N):
 
     total_impulse_particles = 0
     N_particles_escaped = 0
+    # Is really measuring the impulse the escaped particles would have
+    # given in the downward direction if the hole wasn't there,
+    # thus it is really two times larger than the total momentum
+    # of the escaped particles in the vertical direction
     total_impulse_escaped_particles = 0
 
     t = 0
@@ -87,64 +93,64 @@ def simulate_launch(N, fuel_mass, n_boxes):
     # Max tid for aa oppnaa unnslipningshastighet er 20 min
     t_max = 1200  # s
     dt = 1e-3  # s
+    STEPS = int(t_max/dt)
 
     # Vertikal posisjon
-    z = np.zeros(int(t_max/dt))
+    z = np.zeros(STEPS)
     z[0] = Rz
 
     # Fart i vertikal retning
-    vz = np.zeros(int(t_max/dt))
+    vz = np.zeros(STEPS)
 
     # Akselerasjonen
-    az = np.zeros(int(t_max/dt))
+    az = np.zeros(STEPS)
 
     # Masse
-    mass = np.zeros(int(t_max/dt))
+    mass = np.zeros(STEPS)
     mass[0] = mr + fuel_mass
-    fuel = np.zeros(int(t_max/dt))
+    fuel = np.zeros(STEPS)
     fuel[0] = fuel_mass - n_boxes*N*particle_mass
 
     # Unnsplipningshastighet
-    esc_vel = np.zeros(int(t_max/dt))
+    esc_vel = np.zeros(STEPS)
+    esc_vel[0] = np.sqrt((2*cs.G*Mz)/z[0])
 
-    t = 0
-    i = 0
-    while i < int(t_max/dt)-1:
+    i = 1
+    while i < STEPS:
+
+        # opddaterer kraften på raketten, da den er avhengig av
+        # posisjonen og massen
+        gravity = -cs.G*mass[i-1]*Mz/(z[i-1]**2)
+        # opddaterer aksellerasjonen på raketten, da den er avhengig av
+        # kraften og massen
+        az[i] = (thrust + gravity)/mass[i-1]
+
+        # oppdaterer hastighet og posisjon
+        vz[i] = vz[i-1] + az[i]*dt
+        z[i] = z[i-1] + vz[i]*dt
+
+        # oppddaterer rakettens totale masse og mengdden drivstoff
+        mass[i] = mass[i-1] - fuel_consumption*dt
+        fuel[i] = fuel[i-1] - fuel_consumption*dt
 
         # oppdaterer unnslipningshastighet, da den er avhengig av
         # posisjonen og massen til raketten
         esc_vel[i] = np.sqrt((2*cs.G*Mz)/z[i])
-        # opddaterer kraften på raketten, da den er avhengig av
-        # posisjonen og massen
-        gravity = -cs.G*mass[i]*Mz/(z[i]**2)
-        # opddaterer aksellerasjonen på raketten, da den er avhengig av
-        # kraften og massen
-        az[i] = (thrust + gravity)/mass[i]
-
         # avslutter hvis vi har oppnådd unnslipningshastighet
         if vz[i] >= esc_vel[i]:
             break
 
-        # oppdaterer hastighet og posisjon
-        vz[i+1] = vz[i] + az[i]*dt
-        z[i+1] = z[i] + vz[i+1]*dt
-
-        # oppddaterer rakettens totale masse og mengdden drivstoff
-        mass[i+1] = mass[i] - fuel_consumption*dt
-        fuel[i+1] = fuel[i] - fuel_consumption*dt
-
-        t += dt
         i += 1
 
-    return t, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption
+    return dt, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption
 
 
-t, z, vz, az, mass, fuel, esc_vel, fuel_consumption = simulate_launch(1000, 12000, 2.7e16)
+dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption = simulate_launch(1000, 12000, 2.7e16)
 with open('rocket_position.txt', 'w') as outfile:
     for pos in z:
         outfile.write(f'{pos}\n')
 
-time = np.linspace(0, t, len(z))
+time = np.linspace(0, dt*(len(z)-1), len(z))
 fig, axs = plt.subplots(3)
 fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
 
