@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.constants as cs
 
@@ -14,7 +13,7 @@ M_zeron = system.masses[0]          # Massen til Zeron
 # Perioden til Zeron: bruker denne til a finne tiden det tar for 20 omlop rundt Stel. Skars.
 period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(cs.G_sol*(M_s+M_zeron)))
 t_max = 20*period_zeron
-dt = 1e-4   # 10,000 tidssteg per yr
+dt = 1e-2   # 10,000 tidssteg per yr
 
 N = int(t_max/dt)   # Antall tidssteg
 num_planets = system.number_of_planets
@@ -38,9 +37,9 @@ while j < N-1:
     
     j += 1
 
-with open('positions.txt', 'w') as pos_outfile:
-    for j in range(N):
-        str = f''
-        for i in range(num_planets):
-            str += f'{pos[i,j,0]};{pos[i,j,1]},'
-        pos_outfile.write(str+'\n')
+# with open('positions.txt', 'w') as pos_outfile:
+#     for j in range(N):
+#         str = f''
+#         for i in range(num_planets):
+#             str += f'{pos[i,j,0]};{pos[i,j,1]},'
+#         pos_outfile.write(str+'\n')
