@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from ast2000tools.solar_system import SolarSystem
 import numpy as np
 
+# calculates the kepler orbit
 def calculate_r(f, e, a):
     return a*(1-e**2)/(1+e*np.cos(f))
 
@@ -19,8 +20,8 @@ def main():
         r.append(calculate_r(f, ei, ai))
     r = np.asarray(r)
 
-    for i, ri in enumerate(r):
-        plt.plot(ri*np.cos(f + aphelion[i]), ri*np.sin(f + aphelion[i]), label=f"planet {i}")
+    for i, (ri, api) in enumerate(zip(r, aphelion)):
+        plt.plot(ri*np.cos(f + api), ri*np.sin(f + api), label=f"planet {i}")
 
     plt.plot(0, 0, marker="o", color="yellow")
     plt.ylabel("y [AU]")
