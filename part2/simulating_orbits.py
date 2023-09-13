@@ -25,18 +25,22 @@ a = np.zeros((num_planets, N, 2))
 for i in range(num_planets):
     pos[i,0] = system.initial_positions[0,i], system.initial_positions[1,i]
     vel[i,0] = system.initial_velocities[0,i], system.initial_velocities[1,i]
-    a[i,0] = -cs.G*M_s*system.masses[i]*pos[i,0]/(np.linalg.norm(pos[i,0])**3)
+    a[i,0] = -cs.G_sol*M_s*system.masses[i]*pos[i,0]/(np.linalg.norm(pos[i,0])**3)
 
 j = 0
 while j < N-1:
 
     for i in range(num_planets):
-        a[i,j+1] =  -cs.G*M_s*system.masses[i]*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
+        # Her bruker vi Leap Frog-metoden for numerisk integrasjon
+        a[i,j+1] =  -cs.G_sol*M_s*system.masses[i]*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
         pos[i,j+1] = pos[i,j] + vel[i,j]*dt + 0.5*a[i,j]*(dt**2)
         vel[i, j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
     
     j += 1
 
-
-
-
+with open('positions.txt', 'w') as pos_outfile:
+    for j in range(N):
+        str = f''
+        for i in range(num_planets):
+            str += f'{pos[i,j,0]};{pos[i,j,1]},'
+        pos_outfile.write(str+'\n')
