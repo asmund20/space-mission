@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from ast2000tools.solar_system import SolarSystem
+from plotting_orbits import main
 
 seed = 59529
 system = SolarSystem(seed)
@@ -16,8 +17,12 @@ with open('positions.txt', 'r') as infile:
             x, y = data[i].split(';')
             pos[i,j] = float(x), float(y)
 
-for i in range(num_planets):
-    plt.plot(pos[i,:,0], pos[i,:,1], ':', label=f'sim planet {i}')
+plt.style.use('dark_background')
+main()
 
+for i in range(num_planets):
+    plt.plot(pos[i,::5,0], pos[i,::5,1], ':', label=f'sim planet {i}')
+
+plt.axis('equal')
 plt.legend()
 plt.show()
