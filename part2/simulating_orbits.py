@@ -12,8 +12,8 @@ M_zeron = system.masses[0]          # Massen til Zeron
 
 # Perioden til Zeron: bruker denne til a finne tiden det tar for 20 omlop rundt Stel. Skars.
 period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(cs.G_sol*(M_s+M_zeron)))
-t_max = 20*period_zeron
-dt = 1e-4   # 10,000 tidssteg per yr
+t_max = 30*period_zeron
+dt = 0.5e-4   # 20,000 tidssteg per yr
 
 N = int(t_max/dt)   # Antall tidssteg
 num_planets = system.number_of_planets
@@ -31,9 +31,13 @@ while j < N-1:
 
     for i in range(num_planets):
         # Her bruker vi Leap Frog-metoden for numerisk integrasjon
-        a[i,j+1] =  -cs.G_sol*M_s*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
-        pos[i,j+1] = pos[i,j] + vel[i,j]*dt + 0.5*a[i,j]*(dt**2)
-        vel[i,j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
+        # a[i,j+1] =  -cs.G_sol*M_s*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
+        # pos[i,j+1] = pos[i,j] + vel[i,j]*dt + 0.5*a[i,j]*(dt**2)
+        # vel[i,j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
+
+        a[i,j] =  -cs.G_sol*M_s*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
+        vel[i,j+1] = vel[i,j] + a[i,j]*dt
+        pos[i,j+1] = pos[i,j] + vel[i,j+1]*dt
     
     j += 1
 
