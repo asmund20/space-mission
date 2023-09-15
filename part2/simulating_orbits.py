@@ -1,6 +1,7 @@
 import numpy as np
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.constants as cs
+import matplotlib.pyplot as plt
 
 seed = 59529
 system = SolarSystem(seed)
@@ -36,6 +37,11 @@ while j < N-1:
         vel[i, j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
     
     j += 1
+
+
+
+plt.plot(np.linspace(0,t_max,N), vel[0,:,0])
+plt.show()
 
 # with open('positions.txt', 'w') as pos_outfile:
 #     for j in range(N):
