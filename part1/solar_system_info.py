@@ -24,4 +24,4 @@ døgn: {system.rotational_periods[0]}""")
 
 g = system.masses*cs.m_sun /ut.AU_to_m(system.semi_major_axes)**2
 for i, gi in enumerate(g):
-    print(f"planet {i} aksellerer Stellaris Skarsgård with {gi} ganger en konstant")
+    print(f"planet {i} bidrar til gravitasjonsfeltet i sentrum til Stellaris Skarsgård med {gi} ganger en konstant")
