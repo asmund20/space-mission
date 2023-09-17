@@ -21,7 +21,7 @@ plt.style.use('dark_background')
 main()
 
 for i in range(num_planets):
-    plt.plot(pos[i,::5,0], pos[i,::5,1], ':', label=f'sim planet {i}')
+    plt.plot(pos[i,::15,0], pos[i,::15,1], ':', label=f'sim planet {i}')
 
 plt.axis('equal')
 plt.legend()
