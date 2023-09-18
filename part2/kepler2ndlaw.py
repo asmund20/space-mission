@@ -22,9 +22,9 @@ a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
 M_s = system.star_mass              # Massen til Stellaris Skarsgard
 M_zeron = system.masses[0]          # Massen til Zeron
 
-# Perioden til Zeron: bruker denne til a finne tiden det tar for 20 omlop rundt Stel. Skars.
+# Perioden til Zeron: bruker denne til a finne tiden det tar for 30 omlop rundt Stel. Skars.
 period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(cs.G_sol*(M_s+M_zeron)))
-dt = 0.5e-4
+dt = 1e-4
 t = np.arange(0,30*period_zeron,dt)
 
 N = len(pos[0])
