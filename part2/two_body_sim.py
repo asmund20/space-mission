@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.utils as ut
 import ast2000tools.constants as cs
+from numba import jit
 
 def calculate_orbits():
     seed = 59529
@@ -34,9 +35,64 @@ def calculate_orbits():
     # the new positions for the star and the planet will now be new_pos = old_pos - CM
 
     planet_pos -= CM
-    str_pos = -CM
+    star_pos = -CM
 
-    # finding the velicities in the new reference-frame
+    # finding the velocities in the new reference-frame
+    #star_vel = -planet_vel*planet_mass*(star_mass + planet_mass)
+    star_vel = -planet_mass/star_mass*planet_vel
+    #planet_vel = planet_vel*(1-planet_mass*(star_mass + planet_mass))
+
+    print(star_vel, planet_vel)
+    print(star_pos, planet_pos)
+
+    RUNTIME = 300*np.sqrt((4*np.pi**2 * system.semi_major_axes[0]**3)/(cs.G_sol*(star_mass+planet_mass)))
+    dt = 1e-4
+    N = int(RUNTIME/dt)
+
+    planet_v = np.zeros((N,2))
+    planet_p = np.zeros((N,2))
+    star_v = np.zeros((N,2))
+    star_p = np.zeros((N,2))
+    CM = np.zeros((N,2))
+
+    F = np.zeros((N,2))
+
+    planet_v[0] = planet_vel
+    planet_p[0] = planet_pos
+    star_v[0] = star_vel
+    star_p[0] = star_pos
+    r = planet_pos-star_pos
+    F[0] = -cs.G_sol*planet_mass*star_mass*r/np.linalg.norm(r)**3
+    print(cs.G, planet_mass, star_mass, r, np.linalg.norm(r)**3)
+
+    i = 1
+
+    while i < N:
+        a_pp = F[i-1]/planet_mass
+        a_sp = -F[i-1]/star_mass
+        planet_p[i] = planet_p[i-1]+planet_v[i-1]*dt+1/2*a_pp*dt**2
+        star_p[i] = star_p[i-1]+star_v[i-1]*dt+1/2*a_sp*dt**2
+
+        r = planet_p[i]-star_p[i]
+        F[i] = -cs.G_sol*planet_mass*star_mass*r/np.linalg.norm(r)**3
+        a_p = F[i]/planet_mass
+        a_s = -F[i]/star_mass
+
+        planet_v[i] = planet_v[i-1] + 1/2*(a_p + a_pp)*dt
+        star_v[i] = star_v[i-1] + 1/2*(a_s + a_sp)*dt
+
+        CM[i] = i/(planet_mass + star_mass) * (planet_mass * planet_p[i] + star_mass * star_p[i])
+
+        i += 1
+
+    t = np.linspace(0, RUNTIME, N)
+    plt.plot(star_p[:,0],star_p[:,1])
+    plt.plot(planet_p[:,0], planet_p[:,1])
+    plt.plot(CM[:,0], CM[:,1])
+    plt.axis("equal")
+    plt.figure()
+    plt.plot(t, [np.linalg.norm(f) for f in F])
+    plt.show()
 
 
 if __name__ == "__main__":
