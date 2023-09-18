@@ -49,6 +49,12 @@ dist_ap = np.sum([np.linalg.norm(pos[0,i+1]-pos[0,i]) \
 vel_peri = dist_peri/(n*dt)     # Gjennomsnittsfart ved perihel
 vel_ap = dist_ap/(n*dt)         # Gjennomsnitssfart ved aphel
 
+# Finner index i hvor Zeron har gjennomfort en hel rotasjon rundt stjerna
+x = pos[0,:,0]
+r = np.sqrt(pos[0,:,0]**2 + pos[0,:,1]**2)
+i = np.argwhere(abs(x/r - 1) <= 1e-8)[1,0]
+# Numerisk utregning av perioden til Zeron
+period_num = i*dt
 
 print(
 f"""
@@ -79,6 +85,18 @@ Aphel:   v_a = {vel_ap} AU/yr
 --------------------------------------------------------
 Diff:    v_p - v_a = {(vel_peri-vel_ap):g} AU/yr
 
+
+
+#=====================#
+#   KEPLERS 3. LOV    #
+#=====================#
+
+Perioden til Zeron:
+========================================================
+Analytisk: P_an = {period_zeron} yr
+Numerisk:  P_num = {period_num} yr
+--------------------------------------------------------
+Diff:      P_an - P_num = {period_zeron-period_num:g} yr
 """
 )
 
