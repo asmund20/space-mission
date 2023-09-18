@@ -36,6 +36,7 @@ while j < N-1:
         # pos[i,j+1] = pos[i,j] + vel[i,j]*dt + 0.5*a[i,j]*(dt**2)
         # vel[i,j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
 
+        # Euler-Cromer
         a[i,j] =  -cs.G_sol*M_s*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
         vel[i,j+1] = vel[i,j] + a[i,j]*dt
         pos[i,j+1] = pos[i,j] + vel[i,j+1]*dt

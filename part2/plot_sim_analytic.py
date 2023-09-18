@@ -20,8 +20,11 @@ with open('positions.txt', 'r') as infile:
 plt.style.use('dark_background')
 main()
 
+colors = ['#e79797', '#fabd55', '#fae155', \
+            '#55fa8f', '#83d2ff', '#cec1ff', '#f4c1ff']
+
 for i in range(num_planets):
-    plt.plot(pos[i,::15,0], pos[i,::15,1], ':', label=f'sim planet {i}')
+    plt.plot(pos[i,::15,0], pos[i,::15,1], ':', color=colors[i], alpha=0.7, label=f'sim planet {i}')
 
 plt.axis('equal')
 plt.legend()
