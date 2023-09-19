@@ -4,9 +4,11 @@ from ast2000tools.solar_system import SolarSystem
 import ast2000tools.utils as ut
 import ast2000tools.constants as cs
 from numba import jit
+import random
 
 def calculate_orbits():
     seed = 59529
+    random.seed(seed)
     system = SolarSystem(seed)
 
     # have checked which planet has the most signifficant pull
@@ -45,7 +47,7 @@ def calculate_orbits():
     print(star_vel, planet_vel)
     print(star_pos, planet_pos)
 
-    RUNTIME = 300*np.sqrt((4*np.pi**2 * system.semi_major_axes[0]**3)/(cs.G_sol*(star_mass+planet_mass)))
+    RUNTIME = 30*np.sqrt((4*np.pi**2 * system.semi_major_axes[0]**3)/(cs.G_sol*(star_mass+planet_mass)))
     dt = 1e-4
     N = int(RUNTIME/dt)
 
@@ -85,13 +87,32 @@ def calculate_orbits():
 
         i += 1
 
+    mu_hat = planet_mass*star_mass/(planet_mass+star_mass)
+    #r = planet_p-star_p
+    r = np.asarray([np.linalg.norm(p_p-p_s) for p_p, p_s in zip(planet_p, star_p)])
+    v = np.asarray([np.linalg.norm(v_p-v_s) for v_p, v_s in zip(planet_v, star_v)])
+    E = 1/2*mu_hat*v**2 - cs.G_sol*planet_mass*star_mass/r
     t = np.linspace(0, RUNTIME, N)
+    plt.plot(t, E)
+    plt.figure()
     plt.plot(star_p[:,0],star_p[:,1])
     plt.plot(planet_p[:,0], planet_p[:,1])
     plt.plot(CM[:,0], CM[:,1])
     plt.axis("equal")
     plt.figure()
     plt.plot(t, [np.linalg.norm(f) for f in F])
+
+
+    plt.figure()
+    v_pec_r = random.uniform(5, 15)
+    i = np.pi * (1/3+0.008)
+    v_rad = v_pec_r + np.sin(i)*star_v[::4000,0]
+    v_rad += np.random.normal(0, (np.max(v_rad)-v_pec_r)/5, size=len(v_rad))
+    plt.plot(t[::4000], v_rad)
+    #plt.ylim([0,np.max(v_rad)])
+    
+
+
     plt.show()
 
 
