@@ -17,6 +17,7 @@ with open('positions.txt', 'r') as infile:
             pos[i,j] = float(x), float(y)
 
 N = len(pos[0,:])
+dt = 1e-4
 pos = np.reshape(pos, (2, num_planets, N))
 
 a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
@@ -24,4 +25,4 @@ M_s = system.star_mass              # Massen til Stellaris Skarsgard
 M_zeron = system.masses[0]          # Massen til Zeron
 period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(cs.G_sol*(M_s+M_zeron)))
 
-system.verify_planet_positions(30*period_zeron, pos)
+system.verify_planet_positions(N*dt, pos)
