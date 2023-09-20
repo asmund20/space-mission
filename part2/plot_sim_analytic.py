@@ -25,6 +25,7 @@ colors = ['#e79797', '#fabd55', '#fae155', \
 
 for i in range(num_planets):
     plt.plot(pos[i,::1200,0], pos[i,::1200,1], ':', color=colors[i], alpha=0.7, label=f'sim planet {i}')
+    plt.scatter(pos[i,-1,0], pos[i,-1,1], color=colors[i])
 
 plt.axis('equal')
 plt.legend()
