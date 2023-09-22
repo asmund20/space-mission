@@ -85,7 +85,7 @@ def calculate_orbits():
         a_p = F[i]/planet_mass
         a_s = -F[i]/star_mass
 
-        # oppdaterer posisjon
+        # oppdaterer hastighet
         planet_v[i] = planet_v[i-1] + 1/2*(a_p + a_pp)*dt
         star_v[i] = star_v[i-1] + 1/2*(a_s + a_sp)*dt
 
