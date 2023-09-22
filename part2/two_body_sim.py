@@ -89,13 +89,15 @@ def calculate_orbits():
         star_v[i] = star_v[i-1] + 1/2*(a_s + a_sp)*dt
 
         # lagrer massesenteret for testing
-        CM[i] = i/(planet_mass + star_mass) * (planet_mass * planet_p[i] + star_mass * star_p[i])
+        CM[i] = 1/(planet_mass + star_mass) * (planet_mass * planet_p[i] + star_mass * star_p[i])
 
         i += 1
 
     # finner relativ hastighet for testing
     v = np.asarray([np.linalg.norm(v_p-v_s) for v_p, v_s in zip(planet_v, star_v)])
     # finner total-energien til systemet
+    mu_hat = planet_mass*star_mass/(planet_mass + star_mass)
+    r = np.asarray([np.linalg.norm(p_p-p_s) for p_p, p_s in zip(planet_p, star_p)])
     E = 1/2*mu_hat*v**2 - cs.G_sol*planet_mass*star_mass/r
 
     t = np.linspace(0, RUNTIME, N)
