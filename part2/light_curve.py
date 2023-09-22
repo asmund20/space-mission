@@ -10,7 +10,7 @@ def fill_array_linearly_between(a, i, j):
     per_step = (a[j]-a[i])/(j-i)
 
 
-    for k in range(i, j):
+    for k in range(i+1, j):
         a[k] = a[k-1]+per_step
 
 def light_curve():
