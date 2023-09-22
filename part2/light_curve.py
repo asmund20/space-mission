@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.utils as ut
 import ast2000tools.constants as cs
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 import random
 
 # funksjon som lager en lineær funksjon mellom to indekser i et array
@@ -90,9 +91,18 @@ def light_curve():
     # legger til noise
     flux += np.random.normal(0, 1e-4, size=len(flux))
 
-    plt.plot(t, flux)
-    plt.xlabel("t [yr]")
-    plt.ylabel("relativ flux fra Stellaris Skarsgård")
+    fig, axs = plt.subplots(2,1)
+    
+    axs[0].plot(t, flux)
+    axs[0].set_xlabel("t [yr]")
+    axs[0].set_ylabel("relativ flux fra Stellaris Skarsgård")
+
+    axs[1].plot(t, flux)
+    axs[1].set_xlabel("t [yr]")
+    axs[1].set_ylabel("relativ flux fra Stellaris Skarsgård")
+    axs[1].xaxis.set_minor_locator(MultipleLocator(0.000025))
+
+    plt.tight_layout()
     plt.show()
 
 
