@@ -44,7 +44,7 @@ def light_curve():
     time_full_planet_in_front = distance_to_move/v_phi
     # finner tiden en del av planeten er foran stjerna
     # i hver ende
-    time_part_of_planet_in_front = planet_radius/v_phi
+    time_part_of_planet_in_front = 2*planet_radius/v_phi
 
     print(f"tid hele planeten er foran stjerna: {time_full_planet_in_front} yr")
     print(f"tid del av planeten er foran stjerna: {time_part_of_planet_in_front} yr")
