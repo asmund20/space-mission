@@ -68,6 +68,7 @@ def calculate_orbits():
     F[0] = -cs.G_sol*planet_mass*star_mass*r/np.linalg.norm(r)**3
     print(cs.G, planet_mass, star_mass, r, np.linalg.norm(r)**3)
 
+
     i = 1
 
     while i < N:
