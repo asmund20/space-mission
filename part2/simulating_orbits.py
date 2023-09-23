@@ -1,3 +1,7 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
 import numpy as np
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.constants as cs
@@ -21,17 +25,12 @@ N = int(t_max/dt)   # Antall tidssteg
 def integrator(pos, vel, a):
     j = 0
     while j < N-1:
-
         for i in range(num_planets):
+
             # Her bruker vi Leap Frog-metoden for numerisk integrasjon
             pos[i,j+1] = pos[i,j] + vel[i,j]*dt + 0.5*a[i,j]*(dt**2)
             a[i,j+1] =  -cs.G_sol*M_s*pos[i,j+1]/(np.linalg.norm(pos[i,j+1])**3)
             vel[i,j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
-
-            # Euler-Cromer
-            # a[i,j] =  -cs.G_sol*M_s*pos[i,j]/(np.linalg.norm(pos[i,j])**3)
-            # vel[i,j+1] = vel[i,j] + a[i,j]*dt
-            # pos[i,j+1] = pos[i,j] + vel[i,j+1]*dt
     
         j += 1
     return pos, vel, a

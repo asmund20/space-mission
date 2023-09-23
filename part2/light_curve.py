@@ -1,3 +1,7 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
 import numpy as np
 import matplotlib.pyplot as plt
 from ast2000tools.solar_system import SolarSystem

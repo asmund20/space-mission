@@ -1,3 +1,7 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
 import matplotlib.pyplot as plt
 import numpy as np
 from ast2000tools.solar_system import SolarSystem
@@ -62,11 +66,12 @@ dist_ap = np.sum([np.linalg.norm(pos[0,i+1]-pos[0,i]) \
 vel_peri = dist_peri/(n*dt)     # Gjennomsnittsfart ved perihel
 vel_ap = dist_ap/(n*dt)         # Gjennomsnitssfart ved aphel
 
+# Regner perioden til planetene numerisk og ved Keplers 3.lov/Newton
 num_periods = periods(pos)
 kepler_periods = [np.sqrt((4*np.pi**2 * system.semi_major_axes[i]**3)/(cs.G_sol*(M_s))) for i in range(num_planets)]
 newton_periods = [np.sqrt((4*np.pi**2 * system.semi_major_axes[i]**3)/(cs.G_sol*(M_s + system.masses[i]))) for i in range(num_planets)]
 
-print(num_periods, kepler_periods, newton_periods)
+
 print(
 f"""
 #=====================#
@@ -102,12 +107,11 @@ Diff:    v_p - v_a = {(vel_peri-vel_ap):g} AU/yr
 #   KEPLERS 3. LOV    #
 #=====================#
 
-Perioden til Zeron:
-========================================================
-Analytisk: P_an = {period_zeron} yr
-Numerisk:  P_num =  yr
---------------------------------------------------------
-Diff:      P_an - P_num = {period_zeron:g} yr
+Periodene til planetene:
+-----------------------------------------------------------------
+        KEPLER       |       NEWTON        |       NUMERISK      
 """
 )
+for kep,new,num in zip(kepler_periods, newton_periods, num_periods):
+    print(f'{kep:^17.8g} yr |{new:^17.8g} yr |{num:^17.8g} yr ')
 
