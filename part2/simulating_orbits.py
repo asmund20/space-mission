@@ -29,23 +29,23 @@ def integrator(pos, vel, a):
         for i in range(num_planets):
 
             # Her bruker vi Leap Frog-metoden for numerisk integrasjon
-            pos[i,j+1] = pos[i,j] + vel[i,j]*dt + 0.5*a[i,j]*(dt**2)
-            a[i,j+1] =  -cs.G_sol*M_s*pos[i,j+1]/(np.linalg.norm(pos[i,j+1])**3)
-            vel[i,j+1] = vel[i,j] + 0.5*(a[i,j]+a[i,j+1])*dt
+            pos[:,i,j+1] = pos[:,i,j] + vel[:,i,j]*dt + 0.5*a[:,i,j]*(dt**2)
+            a[:,i,j+1] =  -cs.G_sol*M_s*pos[:,i,j+1]/(np.linalg.norm(pos[:,i,j+1])**3)
+            vel[:,i,j+1] = vel[:,i,j] + 0.5*(a[:,i,j]+a[:,i,j+1])*dt
     
         j += 1
     return pos, vel, a
 
 
 num_planets = system.number_of_planets
-pos = np.zeros((num_planets, N, 2))
-vel = np.zeros((num_planets, N, 2))
-a = np.zeros((num_planets, N, 2))
+pos = np.zeros((2, num_planets, N))
+vel = np.zeros((2, num_planets, N))
+a = np.zeros((2, num_planets, N))
 
 for i in range(num_planets):
-    pos[i,0] = system.initial_positions[0,i], system.initial_positions[1,i]
-    vel[i,0] = system.initial_velocities[0,i], system.initial_velocities[1,i]
-    a[i,0] = -cs.G_sol*M_s*pos[i,0]/(np.linalg.norm(pos[i,0])**3)
+    pos[:,i,0] = system.initial_positions[0,i], system.initial_positions[1,i]
+    vel[:,i,0] = system.initial_velocities[0,i], system.initial_velocities[1,i]
+    a[:,i,0] = -cs.G_sol*M_s*pos[:,i,0]/(np.linalg.norm(pos[:,i,0])**3)
 
 pos, vel, a = integrator(pos, vel, a)
 
@@ -54,9 +54,9 @@ with open('positions.txt', 'w') as pos_outfile:
     for j in range(N):
         str = f''
         for i in range(num_planets):
-            str += f'{pos[i,j,0]};{pos[i,j,1]},'
+            str += f'{pos[0,i,j]};{pos[1,i,j]},'
         pos_outfile.write(str+'\n')
 
 t = np.linspace(0, t_max, N)
-pos = np.reshape(pos, (2, num_planets, N))
-mission.generate_orbit_video(t, pos)
+
+# mission.generate_orbit_video(t, pos)
