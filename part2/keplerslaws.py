@@ -51,13 +51,13 @@ for i in range(N-1):
 
 n = 10  # Antall arealelement som skal inkluderes
 # Areal utspendt ved perihel
-dA_peri = np.sum(dA[int(period_zeron/dt):int(period_zeron/dt)+n+1])
+dA_peri = np.sum(dA[int(0.5*period_zeron/dt):int(0.5*period_zeron/dt)+n+1])
 # Areal utspendt ved aphel
 dA_ap = np.sum(dA[0:n+1])
 
 # Avstand dekket i løpet av n*dt ved perihel
 dist_peri = np.sum([np.linalg.norm(pos[0,i+1]-pos[0,i]) \
-                     for i in range(int(period_zeron/dt), int(period_zeron/dt)+n+1)])
+                     for i in range(int(0.5*period_zeron/dt), int(0.5*period_zeron/dt)+n+1)])
 
 # Avstand dekket i løpet av n*dt ved aphel
 dist_ap = np.sum([np.linalg.norm(pos[0,i+1]-pos[0,i]) \

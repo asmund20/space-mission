@@ -4,12 +4,13 @@
 
 import numpy as np
 from ast2000tools.solar_system import SolarSystem
+from ast2000tools.space_mission import SpaceMission
 import ast2000tools.constants as cs
-import matplotlib.pyplot as plt
 from numba import jit 
 
 seed = 59529
 system = SolarSystem(seed)
+mission = SpaceMission(seed)
 
 a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
 M_s = system.star_mass              # Massen til Stellaris Skarsgard
@@ -55,3 +56,7 @@ with open('positions.txt', 'w') as pos_outfile:
         for i in range(num_planets):
             str += f'{pos[i,j,0]};{pos[i,j,1]},'
         pos_outfile.write(str+'\n')
+
+t = np.linspace(0, t_max, N)
+pos = np.reshape(pos, (2, num_planets, N))
+mission.generate_orbit_video(t, pos)
