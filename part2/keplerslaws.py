@@ -25,8 +25,8 @@ t = np.arange(0, 30*period_zeron,dt)
 def periods(pos):
     periods = np.zeros(num_planets)
     for i in range(num_planets):
-        x = pos[i,:,0]
-        r = np.sqrt(pos[i,:,0]**2 + pos[i,:,1]**2)
+        x = pos[0,i,:]
+        r = np.sqrt(pos[0,i,:]**2 + pos[1,i,:]**2)
         index = np.argwhere(abs(x/r - np.cos(system.initial_orbital_angles[i])) <= 1e-5)
     
         j = np.argwhere(index[1:,0]-index[:-1,0] != 1)
@@ -36,18 +36,18 @@ def periods(pos):
 
 with open('positions.txt', 'r') as infile:
     lines = infile.readlines()
-    pos = np.zeros((num_planets, len(lines), 2))
-    for j in range(len(lines)):
+    N = len(lines)
+    pos = np.zeros((2, num_planets, N))
+    for j in range(N):
         data = lines[j].strip('\n').split(',')
         for i in range(num_planets):
             x, y = data[i].split(';')
-            pos[i,j] = float(x), float(y)
+            pos[:,i,j] = float(x), float(y)
 
 
-N = len(pos[0])
 dA = np.zeros(N)
 for i in range(N-1):
-    dA[i] = np.linalg.norm(np.cross(pos[0,i], pos[0,i+1]))/2
+    dA[i] = np.linalg.norm(np.cross(pos[:,0,i], pos[:,0,i+1]))/2
 
 n = 10  # Antall arealelement som skal inkluderes
 # Areal utspendt ved perihel
@@ -56,11 +56,11 @@ dA_peri = np.sum(dA[int(0.5*period_zeron/dt):int(0.5*period_zeron/dt)+n+1])
 dA_ap = np.sum(dA[0:n+1])
 
 # Avstand dekket i løpet av n*dt ved perihel
-dist_peri = np.sum([np.linalg.norm(pos[0,i+1]-pos[0,i]) \
+dist_peri = np.sum([np.linalg.norm(pos[:,0,i+1]-pos[:,0,i]) \
                      for i in range(int(0.5*period_zeron/dt), int(0.5*period_zeron/dt)+n+1)])
 
 # Avstand dekket i løpet av n*dt ved aphel
-dist_ap = np.sum([np.linalg.norm(pos[0,i+1]-pos[0,i]) \
+dist_ap = np.sum([np.linalg.norm(pos[:,0,i+1]-pos[:,0,i]) \
                   for i in range(0,n+1)])
 
 vel_peri = dist_peri/(n*dt)     # Gjennomsnittsfart ved perihel

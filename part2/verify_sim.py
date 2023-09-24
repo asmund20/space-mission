@@ -13,15 +13,14 @@ num_planets = system.number_of_planets
 
 with open('positions.txt', 'r') as infile:
     lines = infile.readlines()
-    pos = np.zeros((num_planets, len(lines), 2))
-    for j in range(len(lines)):
+    N = len(lines)
+    pos = np.zeros((2, num_planets, N))
+    for j in range(N):
         data = lines[j].strip('\n').split(',')
         for i in range(num_planets):
             x, y = data[i].split(';')
-            pos[i,j] = float(x), float(y)
+            pos[:,i,j] = float(x), float(y)
 
-N = len(pos[0,:])
-pos = np.reshape(pos, (2, num_planets, N))
 
 a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
 M_s = system.star_mass              # Massen til Stellaris Skarsgard
