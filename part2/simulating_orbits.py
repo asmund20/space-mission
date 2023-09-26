@@ -50,6 +50,7 @@ for i in range(num_planets):
 pos, vel, a = integrator(pos, vel, a)
 
 np.save('positions', pos)
+np.save('velocities', vel)
 
 t = np.linspace(0, t_max, N)
 mission.generate_orbit_video(t, pos)
