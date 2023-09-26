@@ -18,13 +18,7 @@ launch_time = 0
 # the angle relative to the x-axis determining the launch position on the planet
 launch_angle = 0
 
-r1_norm = []
-# Leser inn avstanden fra Zeron til rakett fra vellykket launch
-with open('rocket_position.txt', 'r') as infile:
-    lines = infile.readlines()
-    for line in lines:
-        r1_norm.append(float(line.strip('\n')))
-r1_norm = np.array(r1_norm)
+r1_norm = np.load('rocket_position.npy')
 
 planet_positions = np.genfromtxt('positions.txt', delimiter=",")
 

@@ -34,16 +34,7 @@ def periods(pos):
     return periods
 
 
-with open('positions.txt', 'r') as infile:
-    lines = infile.readlines()
-    N = len(lines)
-    pos = np.zeros((2, num_planets, N))
-    for j in range(N):
-        data = lines[j].strip('\n').split(',')
-        for i in range(num_planets):
-            x, y = data[i].split(';')
-            pos[:,i,j] = float(x), float(y)
-
+pos = np.load('positions.npy')
 
 dA = np.zeros(N)
 for i in range(N-1):

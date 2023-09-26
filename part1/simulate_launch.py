@@ -146,9 +146,7 @@ def simulate_launch(N, fuel_mass, n_boxes):
 
 
 dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption = simulate_launch(1000, 12000, 2.7e16)
-with open('rocket_position.txt', 'w') as outfile:
-    for pos in z:
-        outfile.write(f'{pos}\n')
+np.save('rocket_position', z)
 
 time = np.linspace(0, dt*(len(z)-1), len(z))
 fig, axs = plt.subplots(3)

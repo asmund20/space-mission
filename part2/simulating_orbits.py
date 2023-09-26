@@ -49,14 +49,7 @@ for i in range(num_planets):
 
 pos, vel, a = integrator(pos, vel, a)
 
-
-with open('positions.txt', 'w') as pos_outfile:
-    for j in range(N):
-        str = f''
-        for i in range(num_planets):
-            str += f'{pos[0,i,j]};{pos[1,i,j]},'
-        pos_outfile.write(str+'\n')
+np.save('positions', pos)
 
 t = np.linspace(0, t_max, N)
-
-# mission.generate_orbit_video(t, pos)
+mission.generate_orbit_video(t, pos)

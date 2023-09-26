@@ -13,13 +13,7 @@ seed = 59529
 
 system = SolarSystem(seed)
 
-r1_norm = []
-# Leser inn avstanden fra Zeron til rakett fra vellykket launch
-with open('rocket_position.txt', 'r') as infile:
-    lines = infile.readlines()
-    for line in lines:
-        r1_norm.append(float(line.strip('\n')))
-r1_norm = np.array(r1_norm)
+r1_norm = np.load('rocket_position.npy')
 
 # Rotasjonshastighet til Zeron
 omega = 2*np.pi/(system.rotational_periods[0]*60*60*24)
