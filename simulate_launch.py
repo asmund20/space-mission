@@ -142,38 +142,43 @@ def simulate_launch(N, fuel_mass, n_boxes):
 
         i += 1
 
-    return dt, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption
+    return dt, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption, thrust
 
 
-dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption = simulate_launch(1000, 12000, 2.7e16)
-np.save('rocket_position', z)
+def launch():
+    return  simulate_launch(1000, 12000, 2.7e16)
 
-time = np.linspace(0, dt*(len(z)-1), len(z))
-fig, axs = plt.subplots(3)
-fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
 
-axs[0].plot(time, z, 'r-', label='Avstand fra sentrum til raketten')
-axs[0].set_ylabel('Avstand [m]')
-axs[0].set_xlabel('Tid [s]')
-axs[0].legend()
+if __name__ == "__main__":
+    dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
+    np.save('rocket_position', z)
 
-axs[1].plot(time, vz, 'g-', label='Fart til raketten')
-axs[1].plot(time, esc_vel, 'k:', label='Unnsplipningshastighet')
-axs[1].set_ylabel('Fart [m/s]')
-axs[1].set_xlabel('Tid [s]')
-axs[1].legend()
+    time = np.linspace(0, dt*(len(z)-1), len(z))
+    fig, axs = plt.subplots(3)
+    fig.suptitle('Simulering av rakettoppskytning', fontweight='bold')
 
-axs[2].plot(time, az, 'b-', label='Akselerasjonen til raketten')
-axs[2].set_ylabel('Akselerasjon [m/s^2]')
-axs[2].set_xlabel('Tid [s]')
-axs[2].legend()
+    axs[0].plot(time, z, 'r-', label='Avstand fra sentrum til raketten')
+    axs[0].set_ylabel('Avstand [m]')
+    axs[0].set_xlabel('Tid [s]')
+    axs[0].legend()
 
-plt.figure()
-plt.plot(time, mass, color='orange', label=f"forbruk: {fuel_consumption:.1f} kg/s")
-plt.ylabel("drivstoff [kg]")
-plt.xlabel("tid [s]")
-plt.suptitle(f"Drivstoff i tanken\ngjenværende drivstoff: {fuel[-1]:.1f} kg")
-plt.legend()
+    axs[1].plot(time, vz, 'g-', label='Fart til raketten')
+    axs[1].plot(time, esc_vel, 'k:', label='Unnsplipningshastighet')
+    axs[1].set_ylabel('Fart [m/s]')
+    axs[1].set_xlabel('Tid [s]')
+    axs[1].legend()
 
-plt.tight_layout()
-plt.show()
+    axs[2].plot(time, az, 'b-', label='Akselerasjonen til raketten')
+    axs[2].set_ylabel('Akselerasjon [m/s^2]')
+    axs[2].set_xlabel('Tid [s]')
+    axs[2].legend()
+
+    plt.figure()
+    plt.plot(time, mass, color='orange', label=f"forbruk: {fuel_consumption:.1f} kg/s")
+    plt.ylabel("drivstoff [kg]")
+    plt.xlabel("tid [s]")
+    plt.suptitle(f"Drivstoff i tanken\ngjenværende drivstoff: {fuel[-1]:.1f} kg")
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()

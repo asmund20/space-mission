@@ -6,12 +6,15 @@ from matplotlib import pyplot as plt, patches
 import numpy as np
 import scipy.constants as cs
 from ast2000tools.solar_system import SolarSystem
+from ast2000tools.space_mission import SpaceMission
 import ast2000tools.utils as utils
 import ast2000tools.constants as astconst
+from simulate_launch import launch
 
 seed = 59529
 
 system = SolarSystem(seed)
+mission = SpaceMission(seed)
 
 #launch time relative to one period for Zeron
 # set a positive launch angle for something else than directly away from the sun
@@ -99,16 +102,27 @@ def plot_sim(r, vf, r0):
     plt.scatter(r[-1,0],r[-1,1])
     plt.scatter(r0[-1,0],r0[-1,1])
 
-#r, vf, r0 = sim_launch_relative_period(2.3)
-r, vf, r0 = sim_launch(4.1)
-plot_sim(r, vf, r0)
-print(f'Final velocity rocket: {vf} AU/yr')
-print(f'Final position rocket: {r[-1]} AU')
+def plotting_og_slikt():
+    #r, vf, r0 = sim_launch_relative_period(2.3)
+    r, vf, r0 = sim_launch(4.1)
+    plot_sim(r, vf, r0)
+    print(f'Final velocity rocket: {vf} AU/yr')
+    print(f'Final position rocket: {r[-1]} AU')
 
 
-plt.scatter(0,0)
-plt.axis("equal")
-plt.legend()
-plt.tight_layout()
+    plt.scatter(0,0)
+    plt.axis("equal")
+    plt.legend()
+    plt.tight_layout()
 
-plt.show()
+    plt.show()
+def ast_test():
+    launch_time = 3
+    dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
+    r, v, r0 = sim_launch(launch_time)
+
+    mission.set_launch_parameters(thrust, fuel_consumption, fuel[0], dt*len(mass), r[0], launch_time)
+    mission.launch_rocket()
+    mission.verify_launch_result(r[-1])
+if __name__ == "__main__":
+    ast_test()
