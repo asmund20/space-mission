@@ -1,3 +1,4 @@
 *.txt
 *.xml
 *.npy
+/__pycache__
