@@ -48,7 +48,7 @@ def triliteration(t: float, d):
     i = int(t/1e-4)
 
     circ = 2*np.pi*d[0]
-    dbue = 0.01
+    dbue = 1e-5
     N = int(circ/dbue)
     phi = np.linspace(0, 2*np.pi, N, endpoint=False)
 
