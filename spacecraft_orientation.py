@@ -47,8 +47,9 @@ def triliteration(t: float, d):
     planet_positions = np.load("positions.npy")
     i = int(t/1e-4)
 
-    #Her er det bedre å bestemme seg for en avstand mellom punktene på sirkelen og regne ut N derfra.
-    N = 1000
+    circ = 2*np.pi*d[0]
+    dbue = 0.01
+    N = int(circ/dbue)
     phi = np.linspace(0, 2*np.pi, N, endpoint=False)
 
     # a circle around Zeron with radius equal to the distance to Zeron
