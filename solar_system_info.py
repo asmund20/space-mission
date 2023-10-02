@@ -3,8 +3,8 @@ import ast2000tools.constants as cs
 import ast2000tools.utils as ut
 system = SolarSystem(59529)
 
-print('My system has a {:g} solar mass star with a radius of {:g} kilometers.'
-      .format(system.star_mass, system.star_radius))
+print('My system has a {:g} solar mass star with a radius of {:g} kilometers and temperature of {:g} K.'
+      .format(system.star_mass, system.star_radius, system.star_temperature))
 
 for planet_idx in range(system.number_of_planets):
     print('Planet {:d} is a {} planet with a semi-major axis of {:g} AU with mass {} solar masse and radius {} km'

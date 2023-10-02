@@ -12,7 +12,7 @@ def temp(r, s):
 def main():
     seed = 59529
     system = SolarSystem(seed)
-
+    
     T = temp(system.semi_major_axes,system)
 
     # printer info som vi har i tabell i rapport 3
