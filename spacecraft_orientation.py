@@ -32,7 +32,8 @@ def vel_spacecraft(dlambda1, dlambda2):
     return doppler_vel(np.asarray([dlambda1, dlambda2]))
 
 def rel_vel_spacecraft_xy(dlambda1, dlambda2):
-    phi = mission.star_direction_angles
+    phi = np.asarray(mission.star_direction_angles)
+    phi = phi/180*np.pi
     M = 1/np.sin(phi[1]-phi[0])*np.asarray([
         [np.sin(phi[1]), -np.sin(phi[0])],
         [-np.cos(phi[1]), np.cos(phi[0])]])
@@ -87,7 +88,7 @@ def main(dt, z, fuel, fuel_consumption, thrust, launch_time=0):
     print("Actual position", r[-1])
 
 if __name__ == "__main__":
-    print("Launch time:", sys.argv[1])
+    print(f"Launch time: {sys.argv[1]} yr")
     dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
     launch_times = np.arange(0,10,1)
 
