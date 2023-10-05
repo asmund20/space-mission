@@ -50,10 +50,12 @@ def sim_launch(launch_time, launch_angle=-1):
 
     dt = 1e-4
     i = int(launch_time/dt)
+    # posisjon til Zeron
     r0 = np.zeros((len(r1_norm),2))
     r0[0,0] = utils.AU_to_m(planet_positions[0,0,i])
     r0[0,1] = utils.AU_to_m(planet_positions[1,0,i])
 
+    # hastighet til Zeron
     v0 = np.zeros((len(r1_norm),2))
     v0[0,0] = utils.AU_pr_yr_to_m_pr_s(planet_velocities[0,0,i])
     v0[0,1] = utils.AU_pr_yr_to_m_pr_s(planet_velocities[1,0,i])
@@ -93,6 +95,7 @@ def sim_launch(launch_time, launch_angle=-1):
 
     return r, vf, r0
 
+# ble brukt til testing
 def plot_sim(r, vf, r0):
     plt.suptitle('Banene fulgt av raketten og Zeron i det inertielle referansesytemet')
     plt.xlabel('x [AU]')
@@ -102,6 +105,7 @@ def plot_sim(r, vf, r0):
     plt.scatter(r[-1,0],r[-1,1])
     plt.scatter(r0[-1,0],r0[-1,1])
 
+# ble bru til testing
 def plotting_og_slikt():
     #r, vf, r0 = sim_launch_relative_period(2.3)
     r, vf, r0 = sim_launch(4.1)

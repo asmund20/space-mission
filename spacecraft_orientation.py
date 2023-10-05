@@ -16,19 +16,9 @@ def doppler_vel(dlamba):
     return -cs.c_AU_pr_yr*dlamba/656.3
 
 def vel_sun():
-    #phi = mission.star_direction_angles
-    #M = 1/np.sin(phi[1]-phi[0])*np.asarray([
-        #[np.sin(phi[1]), -np.sin(phi[0])],
-        #[-np.cos(phi[1]), np.cos(phi[0])]])
-    #return np.matmul(M, np.asarray(mission.star_doppler_shifts_at_sun))
     return doppler_vel(np.asarray(mission.star_doppler_shifts_at_sun))
 
 def vel_spacecraft(dlambda1, dlambda2):
-    #phi = mission.star_direction_angles
-    #M = 1/np.sin(phi[1]-phi[0])*np.asarray([
-        #[np.sin(phi[1]), -np.sin(phi[0])],
-        #[-np.cos(phi[1]), np.cos(phi[0])]])
-    #return np.matmul(M, doppler_vel(np.asarray([dlambda1, dlambda2])))
     return doppler_vel(np.asarray([dlambda1, dlambda2]))
 
 def rel_vel_spacecraft_xy(dlambda1, dlambda2):
@@ -42,7 +32,6 @@ def rel_vel_spacecraft_xy(dlambda1, dlambda2):
                   [np.sin(phi[0]), np.sin(phi[1])]])
 
     return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun())
-    #return vel_planet(dlambda1, dlambda2)-vel_sun()
 
 # d has the shape (d_0, d_1, ..., d_n, d_star)
 def triliteration(t: float, d):
@@ -57,8 +46,6 @@ def triliteration(t: float, d):
 
     # a circle around Zeron with radius equal to the distance to Zeron
     S = np.asarray([d[0]*np.cos(phi) + planet_positions[0,0,i], d[0]*np.sin(phi) + planet_positions[1,0,i]])
-    #S[0] += planet_positions[0,0,i]
-    #S[1] += planet_positions[1,0,i]
 
     # the sum of the square errors for the distance to the rest of the planets
     # for each of the points on the circle S
