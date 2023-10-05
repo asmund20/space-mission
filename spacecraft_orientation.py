@@ -34,9 +34,12 @@ def vel_spacecraft(dlambda1, dlambda2):
 def rel_vel_spacecraft_xy(dlambda1, dlambda2):
     phi = np.asarray(mission.star_direction_angles)
     phi = phi/180*np.pi
-    M = 1/np.sin(phi[1]-phi[0])*np.asarray([
-        [np.sin(phi[1]), -np.sin(phi[0])],
-        [-np.cos(phi[1]), np.cos(phi[0])]])
+    # M = 1/np.sin(phi[1]-phi[0])*np.asarray([
+    #     [np.sin(phi[1]), -np.sin(phi[0])],
+    #     [-np.cos(phi[1]), np.cos(phi[0])]])
+
+    M = np.array([[np.cos(phi[0]), np.cos(phi[1])],
+                  [np.sin(phi[0]), np.sin(phi[1])]])
 
     return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun())
     #return vel_planet(dlambda1, dlambda2)-vel_sun()
@@ -79,14 +82,19 @@ def main(dt, z, fuel, fuel_consumption, thrust, launch_time=0):
     mission.launch_rocket()
     mission.verify_launch_result(r[-1])
 
+    d = mission.measure_distances()
+    print(f"Distances to the planets: {d}")
+
     dlambda1, dlambda2 = mission.measure_star_doppler_shifts()
+    print(f"Measured Doppler-shifts: {dlambda1, dlambda2}")
     print(f"Velocity from doppler-effect {rel_vel_spacecraft_xy(dlambda1, dlambda2)}")
     print("Actual velocity",v)
+    print(f"Relative differnce: {np.linalg.norm(v-rel_vel_spacecraft_xy(dlambda1, dlambda2))/np.linalg.norm(v)}")
 
-    d = mission.measure_distances()
     print(f"Time from launch to completion: {dt*(len(z)-1)} s eller {ut.s_to_yr(dt*(len(z)-1))} yr")
     print(f"Triliteration position: {triliteration(launch_time + ut.s_to_yr(dt*(len(z)-1)), d)}")
     print("Actual position", r[-1])
+    print(f"Relative difference: {np.linalg.norm(r[-1]-triliteration(launch_time + ut.s_to_yr(dt*(len(z)-1)), d))/np.linalg.norm(r[-1])}")
 
 if __name__ == "__main__":
     print(f"Launch time: {sys.argv[1]} yr")
@@ -94,5 +102,6 @@ if __name__ == "__main__":
     launch_times = np.arange(0,10,1)
 
     main(dt, z, fuel, fuel_consumption, thrust, launch_time=float(sys.argv[1]))
+
 
     print("\n")

@@ -1,6 +1,8 @@
 from ast2000tools.solar_system import SolarSystem
+from ast2000tools.space_mission import SpaceMission
 import ast2000tools.constants as cs
 import ast2000tools.utils as ut
+mission = SpaceMission(59529)
 system = SolarSystem(59529)
 
 print('My system has a {:g} solar mass star with a radius of {:g} kilometers and temperature of {:g} K.'
@@ -25,3 +27,5 @@ døgn: {system.rotational_periods[0]}""")
 g = system.masses*cs.m_sun /ut.AU_to_m(system.semi_major_axes)**2
 for i, gi in enumerate(g):
     print(f"planet {i} bidrar til gravitasjonsfeltet i sentrum til Stellaris Skarsgård med {gi} ganger en konstant")
+
+print(f'Star angles used for Doppler: phi1 = {mission.star_direction_angles[0]:.6g}, phi2 = {mission.star_direction_angles[1]:.6g}')
