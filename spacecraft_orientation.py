@@ -24,12 +24,9 @@ def vel_spacecraft(dlambda1, dlambda2):
 def rel_vel_spacecraft_xy(dlambda1, dlambda2):
     phi = np.asarray(mission.star_direction_angles)
     phi = phi/180*np.pi
-    # M = 1/np.sin(phi[1]-phi[0])*np.asarray([
-    #     [np.sin(phi[1]), -np.sin(phi[0])],
-    #     [-np.cos(phi[1]), np.cos(phi[0])]])
-
-    M = np.array([[np.cos(phi[0]), np.cos(phi[1])],
-                  [np.sin(phi[0]), np.sin(phi[1])]])
+    M = 1/np.sin(phi[1]-phi[0])*np.asarray([
+        [np.sin(phi[1]), -np.sin(phi[0])],
+        [-np.cos(phi[1]), np.cos(phi[0])]])
 
     return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun())
 
