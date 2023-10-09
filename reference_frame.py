@@ -17,17 +17,17 @@ system = SolarSystem(seed)
 mission = SpaceMission(seed)
 
 #launch time relative to one period for Zeron
-# set a positive launch angle for something else than directly away from the sun
+# set a positive launch angle for other than directly away from the sun
 def sim_launch_relative_period(nperiods, launch_angle=-1):
-    # Perioden til Zeron
     a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
     M_s = system.star_mass              # Massen til Stellaris Skarsgard
     M_zeron = system.masses[0]          # Massen til Zeron
+    # Perioden til Zeron
     period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(astconst.G_sol*(M_s+M_zeron)))
 
     return sim_launch(nperiods*period_zeron, launch_angle=launch_angle)
 
-# set a positive launch angle for something else than directly away from the sun
+# set a positive launch angle for other than directly away from the sun
 # launch time in measured in years
 def sim_launch(launch_time, launch_angle=-1):
     # Perioden til Zeron
@@ -36,8 +36,7 @@ def sim_launch(launch_time, launch_angle=-1):
     M_zeron = system.masses[0]          # Massen til Zeron
     period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(astconst.G_sol*(M_s+M_zeron)))
 
-    # the angle relative to the x-axis determining the launch position on the planet
-    # kan be specified to be something else, here it is in the direction straight away from the sun
+    # unless the launch angle is set, it will be directly away from the star
     if launch_angle < 0:
         launch_angle = 2*np.pi*launch_time/period_zeron
 
