@@ -102,8 +102,8 @@ def plot_sim(r, vf, r0):
     plt.ylabel('y [AU]')
     plt.plot(r0[:,0], r0[:,1], 'k:', label='Banen til Zeron')
     plt.plot(r[:,0], r[:,1], 'k', label='Banen til raketten')
-    plt.scatter(r[-1,0],r[-1,1])
-    plt.scatter(r0[-1,0],r0[-1,1])
+    plt.scatter(r[-1,0],r[-1,1], label='Sluttposisjonen til raketten')
+    plt.scatter(r0[-1,0],r0[-1,1], label='Sluttposisjonen til Zeron')
 
 # ble bru til testing
 def plotting_og_slikt():
@@ -114,7 +114,7 @@ def plotting_og_slikt():
     print(f'Final position rocket: {r[-1]} AU')
 
 
-    plt.scatter(0,0)
+    #plt.scatter(0,0)
     plt.axis("equal")
     plt.legend()
     plt.tight_layout()
@@ -129,4 +129,5 @@ def ast_test():
     mission.launch_rocket()
     mission.verify_launch_result(r[-1])
 if __name__ == "__main__":
-    ast_test()
+    #ast_test()
+    plotting_og_slikt()
