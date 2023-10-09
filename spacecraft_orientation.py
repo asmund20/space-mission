@@ -28,7 +28,7 @@ def rel_vel_spacecraft_xy(dlambda1, dlambda2):
         [np.sin(phi[1]), -np.sin(phi[0])],
         [-np.cos(phi[1]), np.cos(phi[0])]])
 
-    return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun())
+    return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun().T)
 
 # d has the shape (d_0, d_1, ..., d_n, d_star)
 def triliteration(t: float, d):
@@ -60,7 +60,7 @@ def triliteration(t: float, d):
 
 
 def main(dt, z, fuel, fuel_consumption, thrust, launch_time=0):
-    r, v, r0 = sim_launch(launch_time)
+    r, v, r0, _ = sim_launch(launch_time)
 
     mission.set_launch_parameters(thrust, fuel_consumption, fuel[0], dt*(len(z)-1), r[0], launch_time)
     mission.launch_rocket()
@@ -81,11 +81,13 @@ def main(dt, z, fuel, fuel_consumption, thrust, launch_time=0):
     print(f"Relative difference: {np.linalg.norm(r[-1]-triliteration(launch_time + ut.s_to_yr(dt*(len(z)-1)), d))/np.linalg.norm(r[-1])}")
 
 if __name__ == "__main__":
-    print(f"Launch time: {sys.argv[1]} yr")
-    dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
-    launch_times = np.arange(0,10,1)
+    try:
+        print(f"Launch time: {sys.argv[1]} yr")
+        dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
+        launch_times = np.arange(0,10,1)
 
-    main(dt, z, fuel, fuel_consumption, thrust, launch_time=float(sys.argv[1]))
+        main(dt, z, fuel, fuel_consumption, thrust, launch_time=float(sys.argv[1]))
+        print("\n")
 
-
-    print("\n")
+    except IndexError:
+        print("Må kjøres med launch-tidspunkt i år som argument, f. eks 'python spacecraft_orientation.py 0'")
