@@ -112,7 +112,7 @@ def test_for_launch_at():
         print("\n")
 
     except IndexError:
-        print("Må kjøres med launch-tidspunkt i år som argument, f. eks 'python spacecraft_orientation.py 0'")
+        print("Må kjøres med launch-tidspunkt i år som argument for å få testet ved launch også, f. eks 'python del4.py 0'")
 if __name__ == "__main__":
     test_for_launch_at()
-    #test()
+    test()

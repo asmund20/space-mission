@@ -34,3 +34,9 @@ l = system.semi_major_axes[1]*np.sqrt(system.masses[1]/(10*system.star_mass))
 print(f'l = {ut.AU_to_km(l)}')
 print(f'L = {system.radii[1]*640*180/70/np.pi} = {ut.km_to_AU(system.radii[1]*640*180/70/np.pi)}')
 print(f'Tvekne eksentrisitet: {system.eccentricities[1]}')
+
+
+
+
+print(f"Banefart Zeron: {np.linalg.norm(system.initial_velocities[:,0])} AU/yr")
+print(f"Banefart Tvekne: {np.linalg.norm(system.initial_velocities[:,1])} AU/yr")
