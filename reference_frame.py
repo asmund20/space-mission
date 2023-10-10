@@ -17,17 +17,17 @@ system = SolarSystem(seed)
 mission = SpaceMission(seed)
 
 #launch time relative to one period for Zeron
-# set a positive launch angle for something else than directly away from the sun
+# set a positive launch angle for other than directly away from the sun
 def sim_launch_relative_period(nperiods, launch_angle=-1):
-    # Perioden til Zeron
     a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
     M_s = system.star_mass              # Massen til Stellaris Skarsgard
     M_zeron = system.masses[0]          # Massen til Zeron
+    # Perioden til Zeron
     period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(astconst.G_sol*(M_s+M_zeron)))
 
     return sim_launch(nperiods*period_zeron, launch_angle=launch_angle)
 
-# set a positive launch angle for something else than directly away from the sun
+# set a positive launch angle for other than directly away from the sun
 # launch time in measured in years
 def sim_launch(launch_time, launch_angle=-1):
     # Perioden til Zeron
@@ -36,8 +36,7 @@ def sim_launch(launch_time, launch_angle=-1):
     M_zeron = system.masses[0]          # Massen til Zeron
     period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(astconst.G_sol*(M_s+M_zeron)))
 
-    # the angle relative to the x-axis determining the launch position on the planet
-    # kan be specified to be something else, here it is in the direction straight away from the sun
+    # unless the launch angle is set, it will be directly away from the star
     if launch_angle < 0:
         launch_angle = 2*np.pi*launch_time/period_zeron
 
@@ -93,40 +92,51 @@ def sim_launch(launch_time, launch_angle=-1):
     # Slutthastighet i AU/yr
     vf = (r[-1]-r[-2])/utils.s_to_yr(dt)
 
-    return r, vf, r0
+    return r, vf, r0, launch_angle
 
 # ble brukt til testing
-def plot_sim(r, vf, r0):
-    plt.suptitle('Banene fulgt av raketten og Zeron i det inertielle referansesytemet')
-    plt.xlabel('x [AU]')
-    plt.ylabel('y [AU]')
-    plt.plot(r0[:,0], r0[:,1], 'k:', label='Banen til Zeron')
-    plt.plot(r[:,0], r[:,1], 'k', label='Banen til raketten')
-    plt.scatter(r[-1,0],r[-1,1])
-    plt.scatter(r0[-1,0],r0[-1,1])
+def plot_sim(r, vf, r0, plot_zeron=True, launch_angle=""):
+    if launch_angle:
+        plt.scatter(r[-1,0],r[-1,1], label=f'Sluttposisjonen til raketten, launch angle = {launch_angle/np.pi:.2f} pi')
+        plt.plot(r[:,0], r[:,1], 'k', label=f'Banen til raketten, launch angle = {launch_angle/np.pi:.2f} pi')
+    else:
+        plt.scatter(r[-1,0],r[-1,1], label='Sluttposisjonen til raketten')
+        plt.plot(r[:,0], r[:,1], 'k', label='Banen til raketten')
 
-# ble bru til testing
+    if plot_zeron:
+        plt.suptitle('Banene fulgt av raketten og Zeron i det inertielle referansesytemet', fontsize=24)
+        plt.xlabel('x [AU]', fontsize=12)
+        plt.ylabel('y [AU]', fontsize=12)
+        plt.plot(r0[:,0], r0[:,1], 'k:', label='Banen til Zeron')
+        plt.scatter(r0[-1,0],r0[-1,1], label='Sluttposisjonen til Zeron')
+
+# ble brukt til testing
 def plotting_og_slikt():
     #r, vf, r0 = sim_launch_relative_period(2.3)
-    r, vf, r0 = sim_launch(4.1)
-    plot_sim(r, vf, r0)
+    r, vf, r0, launch_angle = sim_launch(4.1)
+    plot_sim(r, vf, r0, launch_angle=launch_angle)
+    print(f'Final velocity rocket: {vf} AU/yr')
+    print(f'Final position rocket: {r[-1]} AU')
+    r, vf, r0, launch_angle = sim_launch(4.1, launch_angle=np.pi)
+    plot_sim(r, vf, r0, False, launch_angle=launch_angle)
     print(f'Final velocity rocket: {vf} AU/yr')
     print(f'Final position rocket: {r[-1]} AU')
 
 
     plt.scatter(0,0)
     plt.axis("equal")
-    plt.legend()
+    plt.legend(fontsize=12, loc="lower right")
     plt.tight_layout()
 
     plt.show()
 def ast_test():
     launch_time = 3
     dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
-    r, v, r0 = sim_launch(launch_time)
+    r, v, r0, _ = sim_launch(launch_time)
 
     mission.set_launch_parameters(thrust, fuel_consumption, fuel[0], dt*len(mass), r[0], launch_time)
     mission.launch_rocket()
     mission.verify_launch_result(r[-1])
 if __name__ == "__main__":
     ast_test()
+    plotting_og_slikt()

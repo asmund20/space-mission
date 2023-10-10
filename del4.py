@@ -28,7 +28,7 @@ def rel_vel_spacecraft_xy(dlambda1, dlambda2):
         [np.sin(phi[1]), -np.sin(phi[0])],
         [-np.cos(phi[1]), np.cos(phi[0])]])
 
-    return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun())
+    return np.matmul(M, vel_spacecraft(dlambda1, dlambda2)-vel_sun().T)
 
 # d has the shape (d_0, d_1, ..., d_n, d_star)
 def triliteration(t: float, d):
@@ -37,8 +37,9 @@ def triliteration(t: float, d):
     i = int(t/1e-4)
 
     circ = 2*np.pi*d[0]
-    dbue = 1e-5
-    N = int(circ/dbue)
+    dbue = 1e-3
+    min_N = 1000
+    N = max(min_N, int(circ/dbue))
     phi = np.linspace(0, 2*np.pi, N, endpoint=False)
 
     # a circle around Zeron with radius equal to the distance to Zeron
@@ -46,46 +47,70 @@ def triliteration(t: float, d):
 
     # the sum of the square errors for the distance to the rest of the planets
     # for each of the points on the circle S
-    e = np.zeros(len(S[0]))
+    e = np.zeros(N)
     for j, dj in enumerate(d[1:]):
+        j += 1
         A = S.copy()
         A[0,:] = S[0,:]-planet_positions[0,j,i]
         A[1,:] = S[1,:]-planet_positions[1,j,i]
 
-        for k, a in enumerate(A):
-            e[k] -= (np.linalg.norm(a)-dj)**2
+        for k, _ in enumerate(A[0]):
+            e[k] += (np.linalg.norm(A[:,k])-dj)**2
 
     i = np.argmin(e)
     return S[:,i]
 
 
 def main(dt, z, fuel, fuel_consumption, thrust, launch_time=0):
-    r, v, r0 = sim_launch(launch_time)
+    # finner størrelser for å teste triliteration og rel_vel_spacecraft_xy
+    r, v, _, _ = sim_launch(launch_time)
 
+    # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
     mission.set_launch_parameters(thrust, fuel_consumption, fuel[0], dt*(len(z)-1), r[0], launch_time)
     mission.launch_rocket()
     mission.verify_launch_result(r[-1])
 
-    d = mission.measure_distances()
+    # avstanden til alle planetene
+    d = mission.measure_distances()[:-1]
     print(f"Distances to the planets: {d}")
 
     dlambda1, dlambda2 = mission.measure_star_doppler_shifts()
-    print(f"Measured Doppler-shifts: {dlambda1, dlambda2}")
-    print(f"Velocity from doppler-effect {rel_vel_spacecraft_xy(dlambda1, dlambda2)}")
-    print("Actual velocity",v)
+    print(f"Measured Doppler-shifts: {dlambda1, dlambda2} nm")
+    print(f"Velocity from doppler-effect {rel_vel_spacecraft_xy(dlambda1, dlambda2)} AU")
+    print("Actual velocity",v, "AU/yr")
     print(f"Relative differnce: {np.linalg.norm(v-rel_vel_spacecraft_xy(dlambda1, dlambda2))/np.linalg.norm(v)}")
 
     print(f"Time from launch to completion: {dt*(len(z)-1)} s eller {ut.s_to_yr(dt*(len(z)-1))} yr")
-    print(f"Triliteration position: {triliteration(launch_time + ut.s_to_yr(dt*(len(z)-1)), d)}")
-    print("Actual position", r[-1])
+    print(f"Triliteration position: {triliteration(launch_time + ut.s_to_yr(dt*(len(z)-1)), d)} AU")
+    print("Actual position", r[-1], "AU")
     print(f"Relative difference: {np.linalg.norm(r[-1]-triliteration(launch_time + ut.s_to_yr(dt*(len(z)-1)), d))/np.linalg.norm(r[-1])}")
 
+def test():
+    t = 0
+    planet_pos = np.load("positions.npy")[:,:,0]
+    n_planets = len(planet_pos[0])
+    d = np.zeros(n_planets)
+
+    for i, _ in enumerate(d):
+        d[i] = np.linalg.norm(planet_pos[:,i])
+
+    print(d)
+    print("Actual posision is (0, 0)")
+    print(f"Position from triliteration is {triliteration(t, d)}")
+    
+
+
+def test_for_launch_at():
+    try:
+        print(f"Launch time: {sys.argv[1]} yr")
+        # simulerer launch sett fra planeten
+        dt, z, _, _, _, fuel, _, fuel_consumption, thrust = launch()
+
+        main(dt, z, fuel, fuel_consumption, thrust, launch_time=float(sys.argv[1]))
+        print("\n")
+
+    except IndexError:
+        print("Må kjøres med launch-tidspunkt i år som argument, f. eks 'python spacecraft_orientation.py 0'")
 if __name__ == "__main__":
-    print(f"Launch time: {sys.argv[1]} yr")
-    dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
-    launch_times = np.arange(0,10,1)
-
-    main(dt, z, fuel, fuel_consumption, thrust, launch_time=float(sys.argv[1]))
-
-
-    print("\n")
+    test_for_launch_at()
+    #test()
