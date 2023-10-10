@@ -37,7 +37,7 @@ def triliteration(t: float, d):
     i = int(t/1e-4)
 
     circ = 2*np.pi*d[0]
-    dbue = 1e-3
+    dbue = 1e-4
     min_N = 1000
     N = max(min_N, int(circ/dbue))
     phi = np.linspace(0, 2*np.pi, N, endpoint=False)
@@ -48,6 +48,7 @@ def triliteration(t: float, d):
     # the sum of the square errors for the distance to the rest of the planets
     # for each of the points on the circle S
     e = np.zeros(N)
+
     for j, dj in enumerate(d[1:]):
         j += 1
         A = S.copy()
@@ -57,6 +58,7 @@ def triliteration(t: float, d):
         for k, _ in enumerate(A[0]):
             e[k] += (np.linalg.norm(A[:,k])-dj)**2
 
+    #returning the minimum square error
     i = np.argmin(e)
     return S[:,i]
 
