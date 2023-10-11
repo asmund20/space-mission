@@ -26,7 +26,6 @@ def trajectory(initial_time, position, velocity, time, dt):
     i = 0
     t = initial_time
     while t < initial_time+time:
-        ...
         g = 0
         for planet, planet_mass in enumerate(system.masses):
             g += cs.G_sol*planet_mass*(planet_pos_interp[:,planet,i]-position)/np.linalg.norm(planet_pos_interp[:,planet,i]-position)**3
@@ -38,6 +37,8 @@ def trajectory(initial_time, position, velocity, time, dt):
 
         i += 1
         t += dt
+
+    return t, position, velocity
 
 def get_launch_parameters():
     seed = 59529
