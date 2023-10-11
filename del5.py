@@ -25,13 +25,12 @@ def trajectory(initial_time, position, velocity, time, dt):
 
     i = 0
     t = initial_time
-    # while t < initial_time+time:
+
     while i < int(time/dt):
         g = 0
+        g = -cs.G_sol*system.star_mass*position/np.linalg.norm(position)**3
         for planet, planet_mass in enumerate(system.masses):
             g += cs.G_sol*planet_mass*(planet_pos_interp[:,planet,i]-position)/np.linalg.norm(planet_pos_interp[:,planet,i]-position)**3
-
-        g -= cs.G_sol*system.star_mass*position/np.linalg.norm(position)**3
 
         velocity += g*dt
         position += velocity*dt
@@ -98,17 +97,28 @@ def get_launch_parameters():
 
     return t0, phi0, time
 
-pos_planets = np.load('positions.npy')
+def test():
+    seed = 59529
+    system = SolarSystem(seed)
 
-t0, phi0, time = get_launch_parameters()
-r, vf, r0, phi0 = sim_launch(t0, phi0-0.2)
-t, position, velocity = trajectory(t0, r[-1], vf, time+0.1, dt=1e-5)
+    pos_planets = np.load('positions.npy')
 
-print(position-pos_planets[:,1,int((t0+time)/1e-4)])
+    t0, phi0, time = get_launch_parameters()
+    r, vf, r0, phi0 = sim_launch(t0, phi0-0.2)
+    t, position, velocity = trajectory(t0, r[-1], vf, time+0.1, dt=1e-5)
 
+    rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
+    print(rocket_from_tvekne)
 
-plt.scatter(position[0], position[1])
-plt.scatter(0,0)
-plt.scatter(pos_planets[0,1,int((t0+time)/1e-4)], pos_planets[1,1,int((t0+time)/1e-4)])
-plt.axis('equal')
-plt.show()
+    in_orbit = np.linalg.norm(rocket_from_tvekne) < np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
+    print(f"In orbit around Tvekne? {in_orbit}")
+    print(f"position: {position} AU\nvelocity: {velocity} AU/yr")
+
+    plt.scatter(position[0], position[1])
+    plt.scatter(0,0)
+    plt.scatter(pos_planets[0,1,int((t0+time)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
+    plt.axis('equal')
+    plt.show()
+
+if __name__ == "__main__":
+    test()
