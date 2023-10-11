@@ -29,7 +29,7 @@ def sim_launch_relative_period(nperiods, launch_angle=-1):
 
 # set a positive launch angle for other than directly away from the sun
 # launch time in measured in years
-def sim_launch(launch_time, launch_angle=-1):
+def sim_launch(launch_time, launch_angle=None):
     # Perioden til Zeron
     a_zeron = system.semi_major_axes[0] # Store halvakse til hjemplaneten Zeron
     M_s = system.star_mass              # Massen til Stellaris Skarsgard
@@ -37,7 +37,7 @@ def sim_launch(launch_time, launch_angle=-1):
     period_zeron = np.sqrt((4*np.pi**2 * a_zeron**3)/(astconst.G_sol*(M_s+M_zeron)))
 
     # unless the launch angle is set, it will be directly away from the star
-    if launch_angle < 0:
+    if launch_angle == None:
         launch_angle = 2*np.pi*launch_time/period_zeron
 
     r1_norm = np.load('rocket_position.npy')

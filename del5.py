@@ -25,7 +25,8 @@ def trajectory(initial_time, position, velocity, time, dt):
 
     i = 0
     t = initial_time
-    while t < initial_time+time:
+    # while t < initial_time+time:
+    while i < int(time/dt):
         g = 0
         for planet, planet_mass in enumerate(system.masses):
             g += cs.G_sol*planet_mass*(planet_pos_interp[:,planet,i]-position)/np.linalg.norm(planet_pos_interp[:,planet,i]-position)**3
@@ -93,4 +94,21 @@ def get_launch_parameters():
     # Launch angle
     phi0 = phi_i + np.arctan(vphi_rocket/vr_rocket)
 
-    return t0, phi0
+    time = np.linalg.norm(r1[:,i]-r0[:,i])/abs(vr_rocket)
+
+    return t0, phi0, time
+
+pos_planets = np.load('positions.npy')
+
+t0, phi0, time = get_launch_parameters()
+r, vf, r0, phi0 = sim_launch(t0, phi0-0.2)
+t, position, velocity = trajectory(t0, r[-1], vf, time+0.1, dt=1e-5)
+
+print(position-pos_planets[:,1,int((t0+time)/1e-4)])
+
+
+plt.scatter(position[0], position[1])
+plt.scatter(0,0)
+plt.scatter(pos_planets[0,1,int((t0+time)/1e-4)], pos_planets[1,1,int((t0+time)/1e-4)])
+plt.axis('equal')
+plt.show()
