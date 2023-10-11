@@ -8,11 +8,41 @@ from reference_frame import sim_launch
 from simulate_launch import launch
 import sys
 
-seed = 59529
-system = SolarSystem(seed)
-mission = SpaceMission(seed)
+def trajectory(initial_time, position, velocity, time, dt):
+    seed = 59529
+    system = SolarSystem(seed)
+
+    planet_pos = np.load("positions.npy")
+
+    timesteps_planets = len(planet_pos[0,0])
+    known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
+    desired_times = np.linspace(initial_time, initial_time+time, int(time/dt))
+    planet_pos_interp = np.zeros((2, len(planet_pos[0]), int(time/dt)))
+
+    for planet, _ in enumerate(planet_pos[0]):
+        planet_pos_interp[0,planet,:] = np.interp(desired_times, known_times, planet_pos[0,planet,:])
+        planet_pos_interp[1,planet,:] = np.interp(desired_times, known_times, planet_pos[1,planet,:])
+
+    i = 0
+    t = initial_time
+    while t < initial_time+time:
+        ...
+        g = 0
+        for planet, planet_mass in enumerate(system.masses):
+            g += cs.G_sol*planet_mass*(planet_pos_interp[:,planet,i]-position)/np.linalg.norm(planet_pos_interp[:,planet,i]-position)**3
+
+        g -= cs.G_sol*system.star_mass*position/np.linalg.norm(position)**3
+
+        velocity += g*dt
+        position += velocity*dt
+
+        i += 1
+        t += dt
 
 def get_launch_parameters():
+    seed = 59529
+    system = SolarSystem(seed)
+    mission = SpaceMission(seed)
     """
     Returns: t0 - launchtime
             phi0 - initial angle
