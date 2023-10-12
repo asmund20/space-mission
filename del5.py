@@ -19,6 +19,7 @@ code_orientation_data = 9851
 shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
 
 pos_planets = np.load('positions.npy')
+vel_planets = np.load("velocities.npy")
 rocket_altitude = np.load('rocket_position.npy')
 launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)-1))
 
@@ -115,27 +116,36 @@ def test(t, position, velocity, time, plot=False):
 
     l = np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
     in_orbit = np.linalg.norm(rocket_from_tvekne) < l
-    print(f"In orbit around Tvekne? {in_orbit}")
+    print(f"Close enough to Tvekne for orbit? {in_orbit}")
     print(f"position: {position} AU\nvelocity: {velocity} AU/yr")
+    print("Distance from Tvekne/desired distance:", np.linalg.norm(rocket_from_tvekne)/l)
+    print(f"Velocity Tvekne: {vel_planets[:,1,int(t/1e-4)]} AU/yr")
 
     rad_vel = np.dot(velocity, position)/np.linalg.norm(position)
     print(f"Final radial velocity of rocket: {rad_vel} AU/yr")
 
     if plot:
         theta = np.linspace(0,2*np.pi,1000)
-        plt.scatter(0,0)
-        plt.scatter(position[0], position[1])
-        plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)])
-        plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
+        plt.scatter(0,0, label="Stellaris Skarsgård")
+        plt.scatter(position[0], position[1], label="sonde")
+        plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
+        plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)], label="Tvekne")
         plt.axis('equal')
+        plt.legend()
         plt.show()
 
 def plan_trajectory(plot=False):
     launch_time, phi, travel_duration = get_launch_parameters()
     # adaptation of the parameters
-    launch_time += 0
-    phi += 0.0169
-    travel_duration += 0.587
+
+    # jeg testet litt, disse i kommentarene funker relativt bra men tror kanskje vi må booste utover
+    #launch_time += -0.01
+    #phi += 0.1
+    #travel_duration += 0.98
+
+    launch_time += -0.01
+    phi += 0.1
+    travel_duration += 0.98
 
     r, vf, r0, phi0 = sim_launch(launch_time, phi)
 
