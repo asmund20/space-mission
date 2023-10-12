@@ -8,6 +8,8 @@ from ast2000tools.shortcuts import SpaceMissionShortcuts
 from reference_frame import sim_launch
 from simulate_launch import launch
 import sys
+from del4 import triliteration
+from del4 import rel_vel_spacecraft_xy as doppler
 
 seed = 59529
 system = SolarSystem(seed)
@@ -157,26 +159,30 @@ def plan_trajectory(plot=False):
 
 
 def liftoff():
-    t0, phi0, time = plan_trajectory()
-    r, v, _, _ = sim_launch(t0, phi0)
+    # phi0 is the launch angle defined from the x-axis.
+    time_start_launch, phi0, travel_duration = plan_trajectory()
+    rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
 
     # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
-    mission.set_launch_parameters(thrust, fuel_consumption, fuel, 1e-3*(len(rocket_altitude)-1), r[0], t0)
+    mission.set_launch_parameters(thrust, fuel_consumption, fuel, 1e-3*(len(rocket_altitude)-1), rocket_positions_during_launch[0], time_start_launch)
     mission.launch_rocket()
-    mission.verify_launch_result(r[-1])
+    mission.verify_launch_result(rocket_positions_during_launch[-1])
 
     ### SHORTCUT ###
-    position, velocity, motion_angle = shortcut.get_orientation_data()
-    mission.verify_manual_orientation(position, velocity, motion_angle)
+    sc_position, sc_velocity, sc_motion_angle = shortcut.get_orientation_data()
+    mission.verify_manual_orientation(sc_position, sc_velocity, sc_motion_angle)
     ################
 
     intertravel = mission.begin_interplanetary_travel()
-    t, pos, vel = intertravel.orient()
+    it_t, it_pos, it_vel = intertravel.orient()
     # traj_pos, traj_vel = r[-1], v
-    traj_pos, traj_vel = pos, vel
-    dt = time/1000
-    test(t, pos, vel, time, plot=True)
+    traj_pos, traj_vel = it_pos, it_vel
+    dt = travel_duration/1000
+    print(sc_position, sc_velocity)
+    print(rocket_positions_during_launch[-1], rocket_velocity_after_launch)
+    print(it_pos, it_vel)
+    test(it_t, it_pos, it_vel, travel_duration, plot=True)
     # while t < t0 + time:
     #     intertravel.coast(dt)
     #     _, traj_pos, traj_vel = trajectory(t,traj_pos,traj_vel,dt)
