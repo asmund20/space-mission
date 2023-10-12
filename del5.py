@@ -16,18 +16,18 @@ mission = SpaceMission(seed)
 code_orientation_data = 9851
 shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
 
-def trajectory(initial_time, position, velocity, time, dt):
+pos_planets = np.load('positions.npy')
 
-    planet_pos = np.load("positions.npy")
+def trajectory(initial_time, position, velocity, time, dt=1e-5):
 
-    timesteps_planets = len(planet_pos[0,0])
+    timesteps_planets = len(pos_planets[0,0])
     known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
     desired_times = np.linspace(initial_time, initial_time+time, int(time/dt))
-    planet_pos_interp = np.zeros((2, len(planet_pos[0]), int(time/dt)))
+    planet_pos_interp = np.zeros((2, len(pos_planets[0]), int(time/dt)))
 
-    for planet, _ in enumerate(planet_pos[0]):
-        planet_pos_interp[0,planet,:] = np.interp(desired_times, known_times, planet_pos[0,planet,:])
-        planet_pos_interp[1,planet,:] = np.interp(desired_times, known_times, planet_pos[1,planet,:])
+    for planet, _ in enumerate(pos_planets[0]):
+        planet_pos_interp[0,planet,:] = np.interp(desired_times, known_times, pos_planets[0,planet,:])
+        planet_pos_interp[1,planet,:] = np.interp(desired_times, known_times, pos_planets[1,planet,:])
 
     i = 0
     t = initial_time
@@ -58,10 +58,8 @@ def get_launch_parameters():
     Returns: t0 - launchtime
             phi0 - initial angle
     """
-    # Planet positions
-    pos = np.load('positions.npy')
     # r0: position Zeron, r1: position Tvekne
-    r0, r1 = pos[:,0,:], pos[:,1,:]
+    r0, r1 = pos_planets[:,0,:], pos_planets[:,1,:]
 
     # When the planets are the closest
     i = np.argmin(np.linalg.norm(r0-r1, axis=0))
@@ -109,15 +107,11 @@ def get_launch_parameters():
 
 
 
-def test():
-    seed = 59529
-    system = SolarSystem(seed)
-
-    pos_planets = np.load('positions.npy')
+def plan_trajectory(plot=False):
 
     t0, phi0, time = get_launch_parameters()
     r, vf, r0, phi0 = sim_launch(t0, phi0+0.0169)
-    t, position, velocity = trajectory(t0, r[-1], vf, time+0.587, dt=1e-5)
+    t, position, velocity = trajectory(t0, r[-1], vf, time+0.587)
 
     rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
 
@@ -129,18 +123,45 @@ def test():
     rad_vel = np.dot(velocity, position)/np.linalg.norm(position)
     print(f"Final radial velocity of rocket: {rad_vel} AU/yr")
 
-    theta = np.linspace(0,2*np.pi,1000)
+    if plot:
+        theta = np.linspace(0,2*np.pi,1000)
+        plt.scatter(0,0)
+        plt.scatter(position[0], position[1])
+        plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)])
+        plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
+        plt.axis('equal')
+        plt.show()
 
-    plt.scatter(0,0)
-    plt.scatter(position[0], position[1])
-    plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)])
-    plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
-    plt.axis('equal')
-    plt.show()
+    return t0, phi0, t-t0 
 
 
+def liftoff():
+    t0, phi0, time = plan_trajectory()
+    r, v, _, _ = sim_launch(t0, phi0)
+    fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
+
+    z = np.load('rocket_position.npy')
+    # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
+    mission.set_launch_parameters(thrust, fuel_consumption, fuel, 1e-3*(len(z)-1), r[0], t0)
+    mission.launch_rocket()
+    mission.verify_launch_result(r[-1])
+
+    ### SHORTCUT ###
+    position, velocity, motion_angle = shortcut.get_orientation_data()
+    mission.verify_manual_orientation(position, velocity, motion_angle)
+    ################
+
+    intertravel = mission.begin_interplanetary_travel()
+    t, pos, vel = intertravel.orient()
+    dt = time/100
+
+    while t < t0 + time:
+        intertravel.coast(dt)
+        _, traj_pos, traj_vel = trajectory(t0,r[0],v[0],t-t0)
+        t, pos, vel = intertravel.orient()
+        dv = traj_vel - vel
+        intertravel.boost(dv)
+    print('Finished!')
 
 if __name__ == "__main__":
-    test()
-
-fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
+    liftoff()
