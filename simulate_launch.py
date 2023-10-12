@@ -142,6 +142,7 @@ def simulate_launch(N, fuel_mass, n_boxes):
 
         i += 1
 
+    np.save('rocket_specs', np.array([fuel_consumption, thrust, mass[i+1], fuel[i+1]]))
     return dt, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption, thrust
 
 

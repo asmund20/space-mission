@@ -4,13 +4,19 @@ import ast2000tools.constants as cs
 import matplotlib.pyplot as plt
 import numpy as np
 from ast2000tools.space_mission import SpaceMission
+from ast2000tools.shortcuts import SpaceMissionShortcuts
 from reference_frame import sim_launch
 from simulate_launch import launch
 import sys
 
+seed = 59529
+system = SolarSystem(seed)
+mission = SpaceMission(seed)
+
+code_orientation_data = 9851
+shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
+
 def trajectory(initial_time, position, velocity, time, dt):
-    seed = 59529
-    system = SolarSystem(seed)
 
     planet_pos = np.load("positions.npy")
 
@@ -40,10 +46,14 @@ def trajectory(initial_time, position, velocity, time, dt):
 
     return t, position, velocity
 
+
+
+def fuel_consumed(F, consumption, m, dv):
+    return consumption*m*dv/F
+
+
+
 def get_launch_parameters():
-    seed = 59529
-    system = SolarSystem(seed)
-    mission = SpaceMission(seed)
     """
     Returns: t0 - launchtime
             phi0 - initial angle
@@ -97,6 +107,8 @@ def get_launch_parameters():
 
     return t0, phi0, time
 
+
+
 def test():
     seed = 59529
     system = SolarSystem(seed)
@@ -104,21 +116,31 @@ def test():
     pos_planets = np.load('positions.npy')
 
     t0, phi0, time = get_launch_parameters()
-    r, vf, r0, phi0 = sim_launch(t0, phi0-0.2)
-    t, position, velocity = trajectory(t0, r[-1], vf, time+0.1, dt=1e-5)
+    r, vf, r0, phi0 = sim_launch(t0, phi0+0.0169)
+    t, position, velocity = trajectory(t0, r[-1], vf, time+0.587, dt=1e-5)
 
     rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
-    print(rocket_from_tvekne)
 
-    in_orbit = np.linalg.norm(rocket_from_tvekne) < np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
+    l = np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
+    in_orbit = np.linalg.norm(rocket_from_tvekne) < l
     print(f"In orbit around Tvekne? {in_orbit}")
     print(f"position: {position} AU\nvelocity: {velocity} AU/yr")
 
-    plt.scatter(position[0], position[1])
+    rad_vel = np.dot(velocity, position)/np.linalg.norm(position)
+    print(f"Final radial velocity of rocket: {rad_vel} AU/yr")
+
+    theta = np.linspace(0,2*np.pi,1000)
+
     plt.scatter(0,0)
-    plt.scatter(pos_planets[0,1,int((t0+time)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
+    plt.scatter(position[0], position[1])
+    plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)])
+    plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
     plt.axis('equal')
     plt.show()
 
+
+
 if __name__ == "__main__":
     test()
+
+fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
