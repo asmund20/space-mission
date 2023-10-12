@@ -20,6 +20,7 @@ shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
 
 pos_planets = np.load('positions.npy')
 rocket_altitude = np.load('rocket_position.npy')
+launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)-1))
 
 def trajectory(initial_time, position, velocity, time, dt=1e-5):
 
@@ -129,34 +130,19 @@ def test(t, position, velocity, time, plot=False):
         plt.axis('equal')
         plt.show()
 
-
 def plan_trajectory(plot=False):
+    launch_time, phi, travel_duration = get_launch_parameters()
+    # adaptation of the parameters
+    launch_time += 0
+    phi += 0.0169
+    travel_duration += 0.587
 
-    t0, phi, time = get_launch_parameters()
-    r, vf, r0, phi0 = sim_launch(t0, phi+0.0169)
-    t, position, velocity = trajectory(t0+ut.s_to_yr(1e-3*(len(rocket_altitude)-1)), r[-1], vf, time+0.587)
+    r, vf, r0, phi0 = sim_launch(launch_time, phi)
 
-    rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
+    travel_start_time = launch_time + launch_duration
+    test(travel_start_time, r[-1], vf, travel_duration, plot)
 
-    l = np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
-    in_orbit = np.linalg.norm(rocket_from_tvekne) < l
-    print(f"In orbit around Tvekne? {in_orbit}")
-    print(f"position: {position} AU\nvelocity: {velocity} AU/yr")
-
-    rad_vel = np.dot(velocity, position)/np.linalg.norm(position)
-    print(f"Final radial velocity of rocket: {rad_vel} AU/yr")
-
-    if plot:
-        theta = np.linspace(0,2*np.pi,1000)
-        plt.scatter(0,0)
-        plt.scatter(position[0], position[1])
-        plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)])
-        plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)])
-        plt.axis('equal')
-        plt.show()
-
-    return t0, phi0, t-t0 
-
+    return launch_time, phi0, travel_duration
 
 def liftoff():
     # phi0 is the launch angle defined from the x-axis.
@@ -165,7 +151,7 @@ def liftoff():
     fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
 
     # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
-    mission.set_launch_parameters(thrust, fuel_consumption, fuel, 1e-3*(len(rocket_altitude)-1), rocket_positions_during_launch[0], time_start_launch)
+    mission.set_launch_parameters(thrust, fuel_consumption, fuel, ut.yr_to_s(launch_duration), rocket_positions_during_launch[0], time_start_launch)
     mission.launch_rocket()
     mission.verify_launch_result(rocket_positions_during_launch[-1])
 
@@ -176,20 +162,25 @@ def liftoff():
 
     intertravel = mission.begin_interplanetary_travel()
     it_t, it_pos, it_vel = intertravel.orient()
-    # traj_pos, traj_vel = r[-1], v
     traj_pos, traj_vel = it_pos, it_vel
     dt = travel_duration/1000
-    print(sc_position, sc_velocity)
-    print(rocket_positions_during_launch[-1], rocket_velocity_after_launch)
-    print(it_pos, it_vel)
-    test(it_t, it_pos, it_vel, travel_duration, plot=True)
-    # while t < t0 + time:
-    #     intertravel.coast(dt)
-    #     _, traj_pos, traj_vel = trajectory(t,traj_pos,traj_vel,dt)
-    #     t, pos, vel = intertravel.orient()
-    #     dv = traj_vel - vel
-    #     intertravel.boost(dv)
+
+    #print(sc_position, sc_velocity)
+    #print(rocket_positions_during_launch[-1], rocket_velocity_after_launch)
+    #print(it_pos, it_vel)
+
+    desired_position = rocket_positions_during_launch[-1]
+    desired_velocity = rocket_velocity_after_launch
+    test(it_t, desired_position, desired_velocity, travel_duration)
+    #test(it_t, it_pos, it_vel, travel_duration, plot=True)
+    while it_t < time_start_launch + travel_duration:
+        intertravel.coast(dt)
+        _, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
+        it_t, pos, vel = intertravel.orient()
+        dv = traj_vel - vel
+        intertravel.boost(dv)
     print('Finished!')
 
 if __name__ == "__main__":
-    liftoff()
+    #liftoff()
+    plan_trajectory(plot=True)
