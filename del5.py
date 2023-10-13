@@ -223,8 +223,8 @@ def liftoff():
 
 
 if __name__ == "__main__":
-    liftoff()
-    #plan_trajectory(plot=True, plot_system=True)
+    #liftoff()
+    plan_trajectory(plot=True, plot_system=True)
     plt.axis('equal')
     plt.legend()
     plt.show()
