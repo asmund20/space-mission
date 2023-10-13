@@ -142,7 +142,7 @@ def simulate_launch(N, fuel_mass, n_boxes, mr, Mz, Rz):
 
 
 def launch(mr,Mz,Rz):
-    return  simulate_launch(10**3, 20000, 2.7e16, mr, Mz, Rz)
+    return  simulate_launch(1000, 12000, 2.7e16, mr, Mz, Rz)
 
 
 if __name__ == "__main__":
