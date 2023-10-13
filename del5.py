@@ -23,6 +23,8 @@ vel_planets = np.load("velocities.npy")
 rocket_altitude = np.load('rocket_position.npy')
 launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)-1))
 
+
+
 def trajectory(initial_time, position, velocity, time, dt=1e-5):
 
     timesteps_planets = len(pos_planets[0,0])
@@ -49,11 +51,6 @@ def trajectory(initial_time, position, velocity, time, dt=1e-5):
         t += dt
 
     return t, position, velocity
-
-
-
-def fuel_consumed(F, consumption, m, dv):
-    return consumption*m*dv/F
 
 
 
@@ -109,11 +106,22 @@ def get_launch_parameters():
 
     return t0, phi0, time
 
+
+
 def test(t, position, velocity, time, plot=False):
 
-    t, position, velocity = trajectory(t, position, velocity, time)
-    rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
+    # t, position, velocity = trajectory(t, position, velocity, time)
+    N = 1000
+    p = np.zeros((N,2))
+    p[0] = position
+    v = np.zeros((N,2))
+    v[0] = velocity
+    for i in range(N-1):
+        t, p[i+1], v[i+1] = trajectory(t, p[i], v[i], time/N)
 
+    position = p[-1]
+    velocity = v[-1]
+    rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
     l = np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
     in_orbit = np.linalg.norm(rocket_from_tvekne) < l
     print(f"Close enough to Tvekne for orbit? {in_orbit}")
@@ -128,11 +136,12 @@ def test(t, position, velocity, time, plot=False):
         theta = np.linspace(0,2*np.pi,1000)
         plt.scatter(0,0, label="Stellaris Skarsgård")
         plt.scatter(position[0], position[1], label="sonde")
+        plt.plot(p[1:,0], p[1:,1], label='Trajectory')
         plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
         plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)], label="Tvekne")
-        plt.axis('equal')
-        plt.legend()
-        plt.show()
+
+
+
 
 def plan_trajectory(plot=False):
     launch_time, phi, travel_duration = get_launch_parameters()
@@ -143,9 +152,9 @@ def plan_trajectory(plot=False):
     #phi += 0.1
     #travel_duration += 0.98
 
-    launch_time += -0.01
-    phi += 0.1
-    travel_duration += 0.98
+    launch_time += 0
+    phi += 0.1256
+    travel_duration += 0.964
 
     r, vf, r0, phi0 = sim_launch(launch_time, phi)
 
@@ -154,9 +163,11 @@ def plan_trajectory(plot=False):
 
     return launch_time, phi0, travel_duration
 
+
+
 def liftoff():
     # phi0 is the launch angle defined from the x-axis.
-    time_start_launch, phi0, travel_duration = plan_trajectory()
+    time_start_launch, phi0, travel_duration = plan_trajectory(plot=True)
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
 
@@ -173,7 +184,7 @@ def liftoff():
     intertravel = mission.begin_interplanetary_travel()
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
-    dt = travel_duration/1000
+    dt = travel_duration/1e2
 
     #print(sc_position, sc_velocity)
     #print(rocket_positions_during_launch[-1], rocket_velocity_after_launch)
@@ -181,16 +192,36 @@ def liftoff():
 
     desired_position = rocket_positions_during_launch[-1]
     desired_velocity = rocket_velocity_after_launch
-    test(it_t, desired_position, desired_velocity, travel_duration)
-    #test(it_t, it_pos, it_vel, travel_duration, plot=True)
+    # test(it_t, desired_position, desired_velocity, travel_duration)
+    # test(it_t, it_pos, it_vel, travel_duration, plot=True)
+    # print(desired_position-it_pos, desired_velocity-it_vel)
+    # dv = desired_velocity-it_vel
+    # intertravel.boost(dv)
+    
+    pos = it_pos
+    interpositions = []
     while it_t < time_start_launch + travel_duration:
+        interpositions.append(pos)
         intertravel.coast(dt)
-        _, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
+        # it_t, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
+        # positions.append(traj_pos)
         it_t, pos, vel = intertravel.orient()
-        dv = traj_vel - vel
-        intertravel.boost(dv)
+
+        # dv = traj_vel - vel
+        # intertravel.boost(dv)
+    interpositions = np.array(interpositions)
     print('Finished!')
+    # for i in range(len(interpositions)):
+    #     plt.scatter(interpositions[i,0], interpositions[i,1])
+    plt.plot(interpositions[:,0], interpositions[:,1])
+    plt.axis('equal')
+    plt.legend()
+    plt.show()
+
+    
+
 
 if __name__ == "__main__":
-    #liftoff()
-    plan_trajectory(plot=True)
+    liftoff()
+    # plan_trajectory(plot=True)
+    
