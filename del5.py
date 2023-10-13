@@ -10,6 +10,7 @@ from simulate_launch import launch
 import sys
 from del4 import triliteration
 from del4 import rel_vel_spacecraft_xy as doppler
+from numba import jit
 
 seed = 59529
 system = SolarSystem(seed)
@@ -23,14 +24,17 @@ vel_planets = np.load("velocities.npy")
 rocket_altitude = np.load('rocket_position.npy')
 launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)-1))
 
+star_mass = system.star_mass
+planet_masses = system.masses
 
+timesteps_planets = len(pos_planets[0,0])
+known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
 
-def trajectory(initial_time, position, velocity, time, dt=1e-5):
+@jit(nopython=True)
+def trajectory(initial_time, position, velocity, N_steps, dt):
 
-    timesteps_planets = len(pos_planets[0,0])
-    known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
-    desired_times = np.linspace(initial_time, initial_time+time, int(time/dt))
-    planet_pos_interp = np.zeros((2, len(pos_planets[0]), int(time/dt)))
+    desired_times = np.linspace(initial_time, initial_time+N_steps*dt, N_steps)
+    planet_pos_interp = np.zeros((2, len(pos_planets[0]), N_steps))
 
     for planet, _ in enumerate(pos_planets[0]):
         planet_pos_interp[0,planet,:] = np.interp(desired_times, known_times, pos_planets[0,planet,:])
@@ -39,9 +43,9 @@ def trajectory(initial_time, position, velocity, time, dt=1e-5):
     i = 0
     t = initial_time
 
-    while i < int(time/dt):
-        g = -cs.G_sol*system.star_mass*position/np.linalg.norm(position)**3
-        for planet, planet_mass in enumerate(system.masses):
+    while i < N_steps:
+        g = -cs.G_sol*star_mass*position/np.linalg.norm(position)**3
+        for planet, planet_mass in enumerate(planet_masses):
             g += cs.G_sol*planet_mass*(planet_pos_interp[:,planet,i]-position)/np.linalg.norm(planet_pos_interp[:,planet,i]-position)**3
 
         velocity += g*dt
@@ -51,8 +55,6 @@ def trajectory(initial_time, position, velocity, time, dt=1e-5):
         t += dt
 
     return t, position, velocity
-
-
 
 def get_launch_parameters():
     """
@@ -106,9 +108,7 @@ def get_launch_parameters():
 
     return t0, phi0, time
 
-
-
-def test(t, position, velocity, time, plot=False):
+def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Trajectory"):
 
     # t, position, velocity = trajectory(t, position, velocity, time)
     N = 1000
@@ -116,8 +116,10 @@ def test(t, position, velocity, time, plot=False):
     p[0] = position
     v = np.zeros((N,2))
     v[0] = velocity
+    trajectory_dt = 1e-5
+    t = travel_start_time
     for i in range(N-1):
-        t, p[i+1], v[i+1] = trajectory(t, p[i], v[i], time/N)
+        t, p[i+1], v[i+1] = trajectory(t, p[i], v[i], int(travel_duration/N/trajectory_dt), trajectory_dt)
 
     position = p[-1]
     velocity = v[-1]
@@ -134,16 +136,19 @@ def test(t, position, velocity, time, plot=False):
 
     if plot:
         theta = np.linspace(0,2*np.pi,1000)
-        plt.scatter(0,0, label="Stellaris Skarsgård")
         plt.scatter(position[0], position[1], label="sonde")
-        plt.plot(p[1:,0], p[1:,1], label='Trajectory')
+        plt.plot(p[1:,0], p[1:,1], label=trajectory_label)
+
+    if plot_system:
+        plt.scatter(0,0, label="Stellaris Skarsgård")
         plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
-        plt.scatter(pos_planets[0,1,int((t)/1e-4)], pos_planets[1,1,int((t)/1e-4)], label="Tvekne")
+        i_s = int(travel_start_time/1e-4)
+        i_f = int(t/1e-4)
+        plt.scatter(pos_planets[0,1,i_f], pos_planets[1,1,i_f], label="Tvekne")
+        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="orbit Zeron")
+        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="orbit Tvekne")
 
-
-
-
-def plan_trajectory(plot=False):
+def plan_trajectory(plot=False, plot_system=False):
     launch_time, phi, travel_duration = get_launch_parameters()
     # adaptation of the parameters
 
@@ -159,7 +164,7 @@ def plan_trajectory(plot=False):
     r, vf, r0, phi0 = sim_launch(launch_time, phi)
 
     travel_start_time = launch_time + launch_duration
-    test(travel_start_time, r[-1], vf, travel_duration, plot)
+    test(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
 
     return launch_time, phi0, travel_duration
 
@@ -167,7 +172,7 @@ def plan_trajectory(plot=False):
 
 def liftoff():
     # phi0 is the launch angle defined from the x-axis.
-    time_start_launch, phi0, travel_duration = plan_trajectory(plot=True)
+    time_start_launch, phi0, travel_duration = plan_trajectory(plot=True, plot_system=True)
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
 
@@ -198,11 +203,12 @@ def liftoff():
     # dv = desired_velocity-it_vel
     # intertravel.boost(dv)
     
+    test(it_t, it_pos, it_vel, travel_duration, plot=True, trajectory_label="trajectory for intertravel_orientation initial values")
     pos = it_pos
-    interpositions = []
+    interpositions = [pos]
     while it_t < time_start_launch + travel_duration:
-        interpositions.append(pos)
         intertravel.coast(dt)
+        interpositions.append(pos)
         # it_t, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
         # positions.append(traj_pos)
         it_t, pos, vel = intertravel.orient()
@@ -211,17 +217,15 @@ def liftoff():
         # intertravel.boost(dv)
     interpositions = np.array(interpositions)
     print('Finished!')
-    # for i in range(len(interpositions)):
-    #     plt.scatter(interpositions[i,0], interpositions[i,1])
-    plt.plot(interpositions[:,0], interpositions[:,1])
-    plt.axis('equal')
-    plt.legend()
-    plt.show()
+    plt.plot(interpositions[:,0], interpositions[:,1], label="coast")
 
     
 
 
 if __name__ == "__main__":
     liftoff()
-    # plan_trajectory(plot=True)
+    #plan_trajectory(plot=True, plot_system=True)
+    plt.axis('equal')
+    plt.legend()
+    plt.show()
     
