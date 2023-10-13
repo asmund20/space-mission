@@ -9,7 +9,7 @@ from ast2000tools.solar_system import SolarSystem
 from ast2000tools.space_mission import SpaceMission
 import ast2000tools.constants as constants
 import matplotlib.pyplot as plt
-from numba import jit
+
 
 seed = 59529
 
@@ -20,7 +20,6 @@ particle_mass = 3.32e-27  # kg
 
 
 # finner kraft generert og drivstoffforbruk i kg/s
-@jit(nopython=True)
 def microbox_performance(N):
     # Initialbetingelser
     # Lengdene paa boksen i x-, y- og z-retning
@@ -80,9 +79,14 @@ def microbox_performance(N):
 
     return fuel_consumtion, thrust
 
-@jit(nopython=True)
-def simulate_launch(N, fuel_mass, n_boxes, mr, Mz, Rz):
-    
+
+def simulate_launch(N, fuel_mass, n_boxes):
+    # Rakettmasse
+    mr = SpaceMission(seed).spacecraft_mass
+    # Masse til Zeron
+    Mz = system.masses[0]*constants.m_sun
+    # Radius Zeron
+    Rz = system.radii[0]*1e3
 
     fuel_consumption, thrust = np.array(microbox_performance(N))*n_boxes
 
@@ -141,19 +145,12 @@ def simulate_launch(N, fuel_mass, n_boxes, mr, Mz, Rz):
     return dt, z[:i+1], vz[:i+1], az[:i+1], mass[:i+1], fuel[:i+1], esc_vel[:i+1], fuel_consumption, thrust
 
 
-def launch(mr,Mz,Rz):
-    return  simulate_launch(10**3, 20000, 2.7e16, mr, Mz, Rz)
+def launch():
+    return  simulate_launch(1000, 12000, 2.7e16)
 
 
 if __name__ == "__main__":
-    # Rakettmasse
-    mr = SpaceMission(seed).spacecraft_mass
-    # Masse til Zeron
-    Mz = system.masses[0]*constants.m_sun
-    # Radius Zeron
-    Rz = system.radii[0]*1e3
-    dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch(mr,Mz,Rz)
-    np.save('rocket_specs', np.array([fuel_consumption, thrust, mass[0], fuel[0]]))
+    dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
     np.save('rocket_position', z)
 
     time = np.linspace(0, dt*(len(z)-1), len(z))
