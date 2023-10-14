@@ -22,7 +22,7 @@ shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
 pos_planets = np.load('positions.npy')
 vel_planets = np.load("velocities.npy")
 rocket_altitude = np.load('rocket_position.npy')
-launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)-1))
+launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)))
 
 star_mass = system.star_mass
 planet_masses = system.masses
@@ -200,8 +200,8 @@ def liftoff():
     # test(it_t, desired_position, desired_velocity, travel_duration)
     # test(it_t, it_pos, it_vel, travel_duration, plot=True)
     # print(desired_position-it_pos, desired_velocity-it_vel)
-    # dv = desired_velocity-it_vel
-    # intertravel.boost(dv)
+    dv = desired_velocity-it_vel
+    intertravel.boost(dv)
     
     test(it_t, it_pos, it_vel, travel_duration, plot=True, trajectory_label="trajectory for intertravel_orientation initial values")
     pos = it_pos
@@ -223,8 +223,8 @@ def liftoff():
 
 
 if __name__ == "__main__":
-    # liftoff()
-    plan_trajectory(plot=True, plot_system=True)
+    liftoff()
+    #plan_trajectory(plot=True, plot_system=True)
     plt.axis('equal')
     plt.legend()
     plt.show()
