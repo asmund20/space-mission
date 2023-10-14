@@ -9,18 +9,19 @@ from ast2000tools.solar_system import SolarSystem
 from ast2000tools.space_mission import SpaceMission
 import ast2000tools.constants as constants
 import matplotlib.pyplot as plt
+from numba import jit
 
 
 seed = 59529
-
-rand.seed(seed)
 
 system = SolarSystem(seed)
 particle_mass = 3.32e-27  # kg
 
 
 # finner kraft generert og drivstoffforbruk i kg/s
+@jit(nopython=True)
 def microbox_performance(N):
+    rand.seed(seed)
     # Initialbetingelser
     # Lengdene paa boksen i x-, y- og z-retning
     box = np.asarray([1e-6, 1e-6, 1e-6])  # meters
@@ -79,14 +80,8 @@ def microbox_performance(N):
 
     return fuel_consumtion, thrust
 
-
-def simulate_launch(N, fuel_mass, n_boxes):
-    # Rakettmasse
-    mr = SpaceMission(seed).spacecraft_mass
-    # Masse til Zeron
-    Mz = system.masses[0]*constants.m_sun
-    # Radius Zeron
-    Rz = system.radii[0]*1e3
+@jit(nopython=True)
+def simulate_launch(N, fuel_mass, n_boxes, mr, Mz, Rz):
 
     fuel_consumption, thrust = np.array(microbox_performance(N))*n_boxes
 
@@ -146,7 +141,13 @@ def simulate_launch(N, fuel_mass, n_boxes):
 
 
 def launch():
-    return  simulate_launch(1000, 12000, 2.7e16)
+    # Rakettmasse
+    mr = SpaceMission(seed).spacecraft_mass
+    # Masse til Zeron
+    Mz = system.masses[0]*constants.m_sun
+    # Radius Zeron
+    Rz = system.radii[0]*1e3
+    return  simulate_launch(10000, 300000, 5e16, mr, Mz, Rz)
 
 
 if __name__ == "__main__":

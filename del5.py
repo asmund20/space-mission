@@ -143,8 +143,8 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
         plt.scatter(0,0, label="Stellaris Skarsgård")
         plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
         i_s = int(travel_start_time/1e-4)
-        i_f = int(t/1e-4)
-        plt.scatter(pos_planets[0,1,i_f], pos_planets[1,1,i_f], label="Tvekne")
+        i_f = int(t/1e-4) + 1
+        plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], label="Tvekne")
         plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="orbit Zeron")
         plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="orbit Tvekne")
 
@@ -158,8 +158,8 @@ def plan_trajectory(plot=False, plot_system=False):
     #travel_duration += 0.98
 
     launch_time += 0
-    phi += 0.1256
-    travel_duration += 0.964
+    phi += 0.1112
+    travel_duration += 0.8493
 
     r, vf, r0, phi0 = sim_launch(launch_time, phi)
 
@@ -223,7 +223,7 @@ def liftoff():
 
 
 if __name__ == "__main__":
-    #liftoff()
+    # liftoff()
     plan_trajectory(plot=True, plot_system=True)
     plt.axis('equal')
     plt.legend()
