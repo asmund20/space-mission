@@ -209,12 +209,12 @@ def liftoff():
     while it_t < time_start_launch + travel_duration:
         intertravel.coast(dt)
         interpositions.append(pos)
-        # it_t, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
-        # positions.append(traj_pos)
+        it_t, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
+        positions.append(traj_pos)
         it_t, pos, vel = intertravel.orient()
 
-        # dv = traj_vel - vel
-        # intertravel.boost(dv)
+        dv = traj_vel - vel
+        intertravel.boost(dv)
     interpositions = np.array(interpositions)
     print('Finished!')
     plt.plot(interpositions[:,0], interpositions[:,1], label="coast")
