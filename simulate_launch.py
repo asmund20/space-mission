@@ -153,6 +153,7 @@ def launch():
 if __name__ == "__main__":
     dt, z, vz, az, mass, fuel, esc_vel, fuel_consumption, thrust = launch()
     np.save('rocket_position', z)
+    np.save('rocket_specs', np.array([fuel_consumption, thrust, fuel[0]]))
 
     time = np.linspace(0, dt*(len(z)-1), len(z))
     fig, axs = plt.subplots(3)

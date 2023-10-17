@@ -108,7 +108,7 @@ def get_launch_parameters():
 
     return t0, phi0, time
 
-def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Trajectory"):
+def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planned trajectory"):
 
     # t, position, velocity = trajectory(t, position, velocity, time)
     N = 1000
@@ -136,7 +136,7 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
 
     if plot:
         theta = np.linspace(0,2*np.pi,1000)
-        plt.scatter(position[0], position[1], label="sonde")
+        plt.scatter(position[0], position[1], label="Sonde")
         plt.plot(p[1:,0], p[1:,1], label=trajectory_label)
 
     if plot_system:
@@ -145,36 +145,33 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
         i_s = int(travel_start_time/1e-4)
         i_f = int(t/1e-4) + 1
         plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], label="Tvekne")
-        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="orbit Zeron")
-        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="orbit Tvekne")
+        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="Orbit Zeron", linestyle="--")
+        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="Orbit Tvekne", linestyle="--")
+
+    return position
 
 def plan_trajectory(plot=False, plot_system=False):
     launch_time, phi, travel_duration = get_launch_parameters()
-    # adaptation of the parameters
-
-    # jeg testet litt, disse i kommentarene funker relativt bra men tror kanskje vi må booste utover
-    #launch_time += -0.01
-    #phi += 0.1
-    #travel_duration += 0.98
-
+    
+    # adaptation of the parameters by trial and error
     launch_time += 0
-    phi += 0.1112
+    phi += 0.111
     travel_duration += 0.8493
 
     r, vf, r0, phi0 = sim_launch(launch_time, phi)
 
     travel_start_time = launch_time + launch_duration
-    test(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
+    endpoint = test(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
 
-    return launch_time, phi0, travel_duration
+    return launch_time, phi0, travel_duration, endpoint
 
 
 
 def liftoff():
     # phi0 is the launch angle defined from the x-axis.
-    time_start_launch, phi0, travel_duration = plan_trajectory(plot=True, plot_system=True)
+    time_start_launch, phi0, travel_duration, endpoint = plan_trajectory(plot=True, plot_system=True)
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
-    fuel_consumption, thrust, rocket_mass, fuel = np.load('rocket_specs.npy')
+    fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
 
     # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
     mission.set_launch_parameters(thrust, fuel_consumption, fuel, ut.yr_to_s(launch_duration), rocket_positions_during_launch[0], time_start_launch)
@@ -189,42 +186,43 @@ def liftoff():
     intertravel = mission.begin_interplanetary_travel()
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
-    dt = travel_duration/1e2
+    coasttime = travel_duration/230
 
-    #print(sc_position, sc_velocity)
-    #print(rocket_positions_during_launch[-1], rocket_velocity_after_launch)
-    #print(it_pos, it_vel)
+    N = 1000
+    traj_dt = coasttime/N
 
     desired_position = rocket_positions_during_launch[-1]
     desired_velocity = rocket_velocity_after_launch
-    # test(it_t, desired_position, desired_velocity, travel_duration)
-    # test(it_t, it_pos, it_vel, travel_duration, plot=True)
-    # print(desired_position-it_pos, desired_velocity-it_vel)
-    dv = desired_velocity-it_vel
+
+    dv = desired_velocity - it_vel + (endpoint-it_pos)/travel_duration/10
+    # dv = (endpoint-it_pos)/travel_duration - it_vel
     intertravel.boost(dv)
-    
-    test(it_t, it_pos, it_vel, travel_duration, plot=True, trajectory_label="trajectory for intertravel_orientation initial values")
     pos = it_pos
     interpositions = [pos]
-    while it_t < time_start_launch + travel_duration:
-        intertravel.coast(dt)
-        interpositions.append(pos)
-        it_t, traj_pos, traj_vel = trajectory(it_t,traj_pos,traj_vel,dt)
-        positions.append(traj_pos)
-        it_t, pos, vel = intertravel.orient()
 
-        dv = traj_vel - vel
+    t = it_t
+    while t < time_start_launch + travel_duration:
+        intertravel.coast(coasttime)
+        _, traj_pos, traj_vel = trajectory(t,traj_pos,traj_vel,N,traj_dt)
+        t, pos, vel = intertravel.orient()
+        interpositions.append(pos)
+
+        dv = traj_vel - vel #+ (endpoint-pos)/(time_start_launch + travel_duration - t)/100
+
         intertravel.boost(dv)
+
+    interpositions.append(pos)
     interpositions = np.array(interpositions)
+    print(f"Amount of fuel left in the tank: {intertravel.remaining_fuel_mass} kg")
     print('Finished!')
-    plt.plot(interpositions[:,0], interpositions[:,1], label="coast")
+    plt.plot(interpositions[1:,0], interpositions[1:,1], label="Coast")
 
     
 
 
 if __name__ == "__main__":
     liftoff()
-    #plan_trajectory(plot=True, plot_system=True)
+    # plan_trajectory(plot=True, plot_system=True)
     plt.axis('equal')
     plt.legend()
     plt.show()
