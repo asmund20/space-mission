@@ -195,7 +195,6 @@ def liftoff():
     desired_velocity = rocket_velocity_after_launch
 
     dv = desired_velocity - it_vel + (endpoint-it_pos)/travel_duration/10
-    # dv = (endpoint-it_pos)/travel_duration - it_vel
     intertravel.boost(dv)
     pos = it_pos
     interpositions = [pos]
@@ -207,11 +206,16 @@ def liftoff():
         t, pos, vel = intertravel.orient()
         interpositions.append(pos)
 
-        dv = traj_vel - vel #+ (endpoint-pos)/(time_start_launch + travel_duration - t)/100
+        dv = traj_vel - vel 
 
         intertravel.boost(dv)
 
     interpositions.append(pos)
+    for _ in range(4):
+        intertravel.coast(coasttime)
+        t, pos, vel = intertravel.orient()
+        interpositions.append(pos)
+
     interpositions = np.array(interpositions)
     print(f"Amount of fuel left in the tank: {intertravel.remaining_fuel_mass} kg")
     print('Finished!')
