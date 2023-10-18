@@ -6,10 +6,8 @@ import numpy as np
 from ast2000tools.space_mission import SpaceMission
 from ast2000tools.shortcuts import SpaceMissionShortcuts
 from reference_frame import sim_launch
-from simulate_launch import launch
-import sys
-from del4 import triliteration
-from del4 import rel_vel_spacecraft_xy as doppler
+#from del4 import triliteration
+#from del4 import rel_vel_spacecraft_xy as doppler
 from numba import jit
 
 seed = 59529
