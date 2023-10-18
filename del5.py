@@ -220,6 +220,8 @@ def liftoff():
     interpositions = np.array(interpositions)
     print(f"Amount of fuel left in the tank: {intertravel.remaining_fuel_mass} kg")
     print('Finished!')
+    intertravel.look_in_direction_of_planet(1)
+    intertravel.take_picture()
     plt.plot(interpositions[1:,0], interpositions[1:,1], label="Coast")
 
     
