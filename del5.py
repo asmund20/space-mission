@@ -186,7 +186,8 @@ def liftoff():
     intertravel = mission.begin_interplanetary_travel()
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
-    coasttime = travel_duration/230
+    # Adjust coasttime to fit trajectory
+    coasttime = travel_duration/240
 
     N = 1000
     traj_dt = coasttime/N
@@ -211,8 +212,8 @@ def liftoff():
         intertravel.boost(dv)
 
     interpositions.append(pos)
-    for _ in range(4):
-        intertravel.coast(coasttime)
+    for _ in range(10):
+        intertravel.coast(coasttime/3)
         t, pos, vel = intertravel.orient()
         interpositions.append(pos)
 
