@@ -2,15 +2,11 @@ from ast2000tools.solar_system import SolarSystem
 import ast2000tools.utils as ut
 import ast2000tools.constants as cs
 import matplotlib.pyplot as plt
-import numpy as np
 from ast2000tools.space_mission import SpaceMission
 from ast2000tools.shortcuts import SpaceMissionShortcuts
 from reference_frame import sim_launch
-from simulate_launch import launch
-import sys
-from del4 import triliteration
-from del4 import rel_vel_spacecraft_xy as doppler
 from numba import jit
+import numpy as np
 
 seed = 59529
 system = SolarSystem(seed)
@@ -137,16 +133,16 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
     if plot:
         theta = np.linspace(0,2*np.pi,1000)
         plt.scatter(position[0], position[1], label="Sonde")
-        plt.plot(p[1:,0], p[1:,1], label=trajectory_label)
+        plt.plot(p[1:,0], p[1:,1], label=trajectory_label, color='green')
 
     if plot_system:
         plt.scatter(0,0, label="Stellaris Skarsgård")
         plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
         i_s = int(travel_start_time/1e-4)
         i_f = int(t/1e-4) + 1
-        plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], label="Tvekne")
-        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="Orbit Zeron", linestyle="--")
-        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="Orbit Tvekne", linestyle="--")
+        plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], color='blue', label="Tvekne")
+        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], color='red', label="Orbit Zeron", linestyle="--")
+        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], color='blue', label="Orbit Tvekne", linestyle="--")
 
     return position
 
@@ -169,7 +165,7 @@ def plan_trajectory(plot=False, plot_system=False):
 
 def liftoff():
     # phi0 is the launch angle defined from the x-axis.
-    time_start_launch, phi0, travel_duration, endpoint = plan_trajectory(plot=True, plot_system=True)
+    time_start_launch, phi0, travel_duration, endpoint = plan_trajectory(plot=True)
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
 
@@ -187,7 +183,7 @@ def liftoff():
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
     # Adjust coasttime to fit trajectory
-    coasttime = travel_duration/240
+    coasttime = travel_duration/180
 
     N = 1000
     traj_dt = coasttime/N
@@ -212,18 +208,36 @@ def liftoff():
         intertravel.boost(dv)
 
     interpositions.append(pos)
-    for _ in range(10):
-        intertravel.coast(coasttime/3)
+    rot_angle = 0.7
+    M = np.asarray([
+        [np.cos(rot_angle), -np.sin(rot_angle)],
+        [np.sin(rot_angle), np.cos(rot_angle)],
+        ])
+    dv = np.matmul(M, (endpoint-pos)/coasttime/10)
+    intertravel.boost(dv)
+    for _ in range(100):
+        intertravel.coast(coasttime*2)
         t, pos, vel = intertravel.orient()
         interpositions.append(pos)
 
     interpositions = np.array(interpositions)
+
     print(f"Amount of fuel left in the tank: {intertravel.remaining_fuel_mass} kg")
     print('Finished!')
+
     intertravel.look_in_direction_of_planet(1)
     intertravel.take_picture()
-    plt.plot(interpositions[1:,0], interpositions[1:,1], label="Coast")
 
+    l = np.linalg.norm(interpositions[-1])*np.sqrt(system.masses[1]/10/system.star_mass)
+    theta = np.linspace(0,2*np.pi,1000)
+    plt.plot(interpositions[1:,0], interpositions[1:,1], label="Coast")
+    plt.scatter(0,0, label="Stellaris Skarsgård")
+    plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
+    i_s = int(it_t/1e-4)
+    i_f = int(t/1e-4) + 1
+    plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], label="Tvekne")
+    plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="Orbit Zeron", linestyle="--")
+    plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="Orbit Tvekne", linestyle="--")
     
 
 
