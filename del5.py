@@ -14,8 +14,10 @@ seed = 59529
 system = SolarSystem(seed)
 mission = SpaceMission(seed)
 
+code_unstable_orbit = 67311
 code_orientation_data = 9851
 shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
+unstable_orbit = SpaceMissionShortcuts(mission, [code_unstable_orbit])
 
 pos_planets = np.load('positions.npy')
 vel_planets = np.load("velocities.npy")
@@ -106,7 +108,9 @@ def get_launch_parameters():
 
     return t0, phi0, time
 
-def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planned trajectory"):
+
+
+def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planlagt bane"):
 
     # t, position, velocity = trajectory(t, position, velocity, time)
     N = 1000
@@ -133,20 +137,26 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
     print(f"Final radial velocity of rocket: {rad_vel} AU/yr")
 
     if plot:
+        plt.figure(figsize=(8,8))
         theta = np.linspace(0,2*np.pi,1000)
-        plt.scatter(position[0], position[1], label="Sonde")
+        plt.scatter(position[0], position[1], color='green', label="Sonde")
         plt.plot(p[1:,0], p[1:,1], label=trajectory_label, color='green')
 
     if plot_system:
-        plt.scatter(0,0, label="Stellaris Skarsgård")
-        plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
+        plt.scatter(0,0, color='orange', label="Stellaris Skarsgård")
+        plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="Avstand fra Tvekne < l")
         i_s = int(travel_start_time/1e-4)
         i_f = int(t/1e-4) + 1
         plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], color='blue', label="Tvekne")
-        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], color='red', label="Orbit Zeron", linestyle="--")
-        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], color='blue', label="Orbit Tvekne", linestyle="--")
+        plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], color='red', label="Planetbane Zeron", linestyle="--")
+        plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], color='blue', label="Planetbane Tvekne", linestyle="--")
+        plt.xlabel('x [AU]', fontsize=12)
+        plt.ylabel('y [AU]', fontsize=12)
+
 
     return position
+
+
 
 def plan_trajectory(plot=False, plot_system=False):
     launch_time, phi, travel_duration = get_launch_parameters()
@@ -217,7 +227,7 @@ def liftoff():
         ])
     dv = np.matmul(M, (endpoint-pos)/coasttime/10)
     intertravel.boost(dv)
-    for _ in range(100):
+    for _ in range(10):
         intertravel.coast(coasttime*2)
         t, pos, vel = intertravel.orient()
         interpositions.append(pos)
@@ -225,28 +235,82 @@ def liftoff():
     interpositions = np.array(interpositions)
 
     print(f"Amount of fuel left in the tank: {intertravel.remaining_fuel_mass} kg")
-    print('Finished!')
+    print(f"Distance to Tvekne: {np.linalg.norm(interpositions[-1]-pos_planets[:,1,int((t)/1e-4)])}")
 
-    intertravel.look_in_direction_of_planet(1)
-    intertravel.take_picture()
-
+    plt.scatter(0,0, color='orange', label="Stellaris Skarsgård")
     l = np.linalg.norm(interpositions[-1])*np.sqrt(system.masses[1]/10/system.star_mass)
     theta = np.linspace(0,2*np.pi,1000)
-    plt.plot(interpositions[1:,0], interpositions[1:,1], label="Coast")
-    plt.scatter(0,0, label="Stellaris Skarsgård")
-    plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="target area")
+    plt.plot(interpositions[1:,0], interpositions[1:,1], color='black', label="Bane uten boost")
+    plt.scatter(interpositions[-1,0], interpositions[-1,1], color='black', label='Sonden')
+    plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="Avstand fra Tvekne < l")
     i_s = int(it_t/1e-4)
     i_f = int(t/1e-4) + 1
-    plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], label="Tvekne")
-    plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], label="Orbit Zeron", linestyle="--")
-    plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], label="Orbit Tvekne", linestyle="--")
+    plt.scatter(pos_planets[0,1,i_f-1], pos_planets[1,1,i_f-1], color='blue', label="Tvekne")
+    plt.plot(pos_planets[0,0,i_s:i_f], pos_planets[1,0,i_s:i_f], color='red', label="Planetbane Zeron", linestyle="--")
+    plt.plot(pos_planets[0,1,i_s:i_f], pos_planets[1,1,i_s:i_f], color='blue', label="Planetbane Tvekne", linestyle="--")
+    plt.xlabel('x [AU]', fontsize=12)
+    plt.ylabel('y [AU]', fontsize=12)
+
+def stabilize_orbit():
+    time_start_launch, phi0, travel_duration, endpoint = plan_trajectory()
+    rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
+    fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
+
+    # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
+    mission.set_launch_parameters(thrust, fuel_consumption, fuel, ut.yr_to_s(launch_duration), rocket_positions_during_launch[0], time_start_launch)
+    mission.launch_rocket()
+    mission.verify_launch_result(rocket_positions_during_launch[-1])
+
+    ### SHORTCUT ###
+    sc_position, sc_velocity, sc_motion_angle = shortcut.get_orientation_data()
+    mission.verify_manual_orientation(sc_position, sc_velocity, sc_motion_angle)
+
+    time = 25.4123
+    planet_idx = 1
+
+    unstable_orbit.place_spacecraft_in_unstable_orbit(time, planet_idx)
+    land = mission.begin_landing_sequence()
+    ################
+
+    positions = []
+    time_step = 1000
+    for i in range(100):
+        land.fall(time_step)
+        pos = land.orient()[1]
+        positions.append(pos)
     
+    t0, r0, v0 = land.orient()
+    v_stable = np.sqrt(cs.G*cs.m_sun*planet_masses[1]/np.linalg.norm(r0))
+    e_theta = np.array([r0[1]/np.linalg.norm(r0), -r0[0]/np.linalg.norm(r0), 0])
+    dv_inj = e_theta*v_stable - v0
+
+    # land.boost(dv_inj)
+
+    # for _ in range(500):
+    #     land.fall(time_step)
+    #     pos = land.orient()[1]
+    #     positions.append(pos)
+    positions = np.array(positions)
+
+    land.look_in_direction_of_planet(1)
+    land.take_picture()
+
+    plt.figure(figsize=(8,8))
+    plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
+    plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
+    plt.quiver(0,0,positions[-1,0], positions[-1,1], label='r', scale=1)
+    plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1])
+    plt.scatter(0,0,label='Tvekne', color='blue')
+    plt.xlabel('x [m]', fontsize=12)
+    plt.ylabel('y [m]', fontsize=12)
+
 
 
 if __name__ == "__main__":
-    liftoff()
+    # liftoff()
     # plan_trajectory(plot=True, plot_system=True)
+    stabilize_orbit()
     plt.axis('equal')
-    plt.legend()
+    plt.legend(loc='upper right')
     plt.show()
     
