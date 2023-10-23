@@ -160,7 +160,7 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
 
 def plan_trajectory(plot=False, plot_system=False):
     launch_time, phi, travel_duration = get_launch_parameters()
-    
+
     # adaptation of the parameters by trial and error
     launch_time += 0
     phi += 0.111
@@ -274,7 +274,8 @@ def stabilize_orbit():
 
     positions = []
     time_step = 1000
-    for i in range(100):
+    n = 100
+    for _ in range(n):
         land.fall(time_step)
         pos = land.orient()[1]
         positions.append(pos)
@@ -282,24 +283,27 @@ def stabilize_orbit():
     t0, r0, v0 = land.orient()
     v_stable = np.sqrt(cs.G*cs.m_sun*planet_masses[1]/np.linalg.norm(r0))
     e_theta = np.array([r0[1]/np.linalg.norm(r0), -r0[0]/np.linalg.norm(r0), 0])
-    dv_inj = e_theta*v_stable - v0
+    dv_inj = -e_theta*v_stable - v0
 
-    # land.boost(dv_inj)
+    land.boost(dv_inj)
 
-    # for _ in range(500):
-    #     land.fall(time_step)
-    #     pos = land.orient()[1]
-    #     positions.append(pos)
+    pos_after_boost = []
+    for _ in range(20*n):
+        land.fall(time_step)
+        pos = land.orient()[1]
+        pos_after_boost.append(pos)
+
     positions = np.array(positions)
+    pos_after_boost = np.array(pos_after_boost)
 
     land.look_in_direction_of_planet(1)
     land.take_picture()
 
     plt.figure(figsize=(8,8))
-    plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
+    #plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
+    plt.plot(pos_after_boost[:,0], pos_after_boost[:,1], color='red', label='Bane etter injeksjonsmanøver')
     plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
-    plt.quiver(0,0,positions[-1,0], positions[-1,1], label='r', scale=1)
-    plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1])
+    #plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1], color='orange', label='Boost dv: injeksjonsmanøveren', scale=2e3, width= 0.005)
     plt.scatter(0,0,label='Tvekne', color='blue')
     plt.xlabel('x [m]', fontsize=12)
     plt.ylabel('y [m]', fontsize=12)
@@ -307,10 +311,10 @@ def stabilize_orbit():
 
 
 if __name__ == "__main__":
-    # liftoff()
+    liftoff()
     # plan_trajectory(plot=True, plot_system=True)
-    stabilize_orbit()
+    # stabilize_orbit()
     plt.axis('equal')
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
     plt.show()
     
