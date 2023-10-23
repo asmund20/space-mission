@@ -310,9 +310,14 @@ def stabilize_orbit():
 
     r = np.linalg.norm(r0)
     v = np.linalg.norm(v0)
+    e_theta = np.cross(r0, np.array([0,0,1]))/r
+    print(f"e_r prikket med e_theta{np.dot(r0/r, e_theta)}")
     v_theta = np.dot(v0, e_theta)
-    v_r = v0-e_theta*v_theta
+    v_r = np.linalg.norm(v0-e_theta*v_theta)
     theta = np.arccos(r0[0]/r)
+    print(v_theta, v_r)
+    print(np.dot(r0/r, v0))
+    print(np.dot(r0/r, r0), r)
     if r0[1] < 0:
         theta = -theta
 
@@ -322,21 +327,37 @@ def stabilize_orbit():
     mu_hat = m_1*m_2/M
     h = r*v_theta
     p = h**2/M
+    print(p)
     
 
+    T = 1/2*mu_hat*v**2
+    U = - cs.G*M*mu_hat/r
     E = 1/2*mu_hat*v**2 - cs.G*M*mu_hat/r
+    print(E, T, U)
 
     e = np.sqrt(2*E*p/mu_hat/M+1)
+    print(e)
     a = p/(1-e**2)
     b = a*np.sqrt(1-e**2)
     P = np.sqrt(a**3)
 
+    f = np.arccos((p-r)/e*r)
+    if v_r < 0:
+        f = -f
+    omega = theta-f
+
+    f = np.linspace(0, 2*np.pi, 1000, endpoint=False)
+
+    r = p/(1+e*np.cos(f))
+
+    plt.plot(np.cos(f+omega)*r, np.sin(f+omega)*r, label="nye greier")
+
 
 
 if __name__ == "__main__":
-    liftoff()
+    #liftoff()
     # plan_trajectory(plot=True, plot_system=True)
-    # stabilize_orbit()
+    stabilize_orbit()
     plt.axis('equal')
     plt.legend(loc='lower left')
     plt.show()
