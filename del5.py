@@ -304,6 +304,29 @@ def stabilize_orbit():
     plt.xlabel('x [m]', fontsize=12)
     plt.ylabel('y [m]', fontsize=12)
 
+    r = np.linalg.norm(r0)
+    v = np.linalg.norm(v0)
+    v_theta = np.dot(v0, e_theta)
+    v_r = v0-e_theta*v_theta
+    theta = np.arccos(r0[0]/r)
+    if r0[1] < 0:
+        theta = -theta
+
+    m_1 = cs.m_sun*system.masses[1]
+    m_2 = cs.m_sun*system.star_mass
+    M = m_1 + m_2
+    mu_hat = m_1*m_2/M
+    h = r*v_theta
+    p = h**2/M
+    
+
+    E = 1/2*mu_hat*v**2 - cs.G*M*mu_hat/r
+
+    e = np.sqrt(2*E*p/mu_hat/M+1)
+    a = p/(1-e**2)
+    b = a*np.sqrt(1-e**2)
+    P = np.sqrt(a**3)
+
 
 
 if __name__ == "__main__":
