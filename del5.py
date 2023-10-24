@@ -291,7 +291,7 @@ def stabilize_orbit():
     land.boost(dv_inj)
 
     pos_after_boost = []
-    for _ in range(20*n):
+    for _ in range(n):
         land.fall(time_step)
         pos = land.orient()[1]
         pos_after_boost.append(pos)
@@ -311,12 +311,16 @@ def stabilize_orbit():
     plt.xlabel('x [m]', fontsize=12)
     plt.ylabel('y [m]', fontsize=12)
 
+
     r = np.linalg.norm(r0)
     v = np.linalg.norm(v0)
-    e_theta = np.cross(r0, np.array([0,0,1]))/r
+    print(f'r,v = {r}, {v}')
+    print(f'm = {land.mission.spacecraft_mass} kg')
+    # e_theta = np.cross(r0, np.array([0,0,1]))/r
     print(f"e_r prikket med e_theta{np.dot(r0/r, e_theta)}")
     v_theta = np.dot(v0, e_theta)
     v_r = np.linalg.norm(v0-e_theta*v_theta)
+    print(f'sqrt(v_r^2 + v_theta^2) = {np.sqrt(v_theta**2 + v_r**2)}')
     theta = np.arccos(r0[0]/r)
     print(v_theta, v_r)
     print(np.dot(r0/r, v0))
