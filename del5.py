@@ -282,9 +282,12 @@ def stabilize_orbit():
     
     t0, r0, v0 = land.orient()
     v_stable = np.sqrt(cs.G*cs.m_sun*planet_masses[1]/np.linalg.norm(r0))
-    e_theta = np.array([r0[1]/np.linalg.norm(r0), -r0[0]/np.linalg.norm(r0), 0])
-    dv_inj = -e_theta*v_stable - v0
+    e_theta = np.array([-r0[1]/np.linalg.norm(r0), r0[0]/np.linalg.norm(r0), 0])
+    dv_inj = e_theta*v_stable - v0
 
+    print('#'*20)
+    print(f'dv_inj = {dv_inj}')
+    print('#'*20)
     land.boost(dv_inj)
 
     pos_after_boost = []
