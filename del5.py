@@ -199,6 +199,7 @@ def liftoff():
 
     N = 1000
     traj_dt = coasttime/N
+    print(f'traj_dt = {traj_dt}')
 
     desired_position = rocket_positions_during_launch[-1]
     desired_velocity = rocket_velocity_after_launch
@@ -272,13 +273,13 @@ def stabilize_orbit():
     land = mission.begin_landing_sequence()
     ################
 
-    positions = []
+    # positions = []
     time_step = 1000
     n = 100
-    for _ in range(n):
-        land.fall(time_step)
-        pos = land.orient()[1]
-        positions.append(pos)
+    # for _ in range(n):
+    #     land.fall(time_step)
+    #     pos = land.orient()[1]
+    #     positions.append(pos)
     
     t0, r0, v0 = land.orient()
     v_stable = np.sqrt(cs.G*cs.m_sun*planet_masses[1]/np.linalg.norm(r0))
@@ -296,7 +297,7 @@ def stabilize_orbit():
         pos = land.orient()[1]
         pos_after_boost.append(pos)
 
-    positions = np.array(positions)
+    # positions = np.array(positions)
     pos_after_boost = np.array(pos_after_boost)
 
     land.look_in_direction_of_planet(1)
@@ -305,7 +306,7 @@ def stabilize_orbit():
     plt.figure(figsize=(8,8))
     #plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
     plt.plot(pos_after_boost[:,0], pos_after_boost[:,1], color='red', label='Bane etter injeksjonsmanøver')
-    plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
+    # plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
     #plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1], color='orange', label='Boost dv: injeksjonsmanøveren', scale=2e3, width= 0.005)
     plt.scatter(0,0,label='Tvekne', color='blue')
     plt.xlabel('x [m]', fontsize=12)
@@ -328,12 +329,12 @@ def stabilize_orbit():
     if r0[1] < 0:
         theta = -theta
 
-    m_1 = cs.m_sun*system.masses[1]
-    m_2 = cs.m_sun*system.star_mass
+    m_1 = land.mission.spacecraft_mass
+    m_2 = cs.m_sun*system.masses[1]
     M = m_1 + m_2
     mu_hat = m_1*m_2/M
     h = r*v_theta
-    p = h**2/M
+    p = h**2/M/cs.G
     print(p)
     
 
@@ -346,7 +347,8 @@ def stabilize_orbit():
     print(e)
     a = p/(1-e**2)
     b = a*np.sqrt(1-e**2)
-    P = np.sqrt(a**3)
+    P = 2*np.pi*a*b/h
+    print(f'a = {a}m\nb = {b}m\nP = {P}s')
 
     f = np.arccos((p-r)/e*r)
     if v_r < 0:
@@ -362,7 +364,7 @@ def stabilize_orbit():
 
 
 if __name__ == "__main__":
-    #liftoff()
+    # liftoff()
     # plan_trajectory(plot=True, plot_system=True)
     stabilize_orbit()
     plt.axis('equal')
