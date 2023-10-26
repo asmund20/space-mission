@@ -192,6 +192,9 @@ def liftoff():
     ################
 
     intertravel = mission.begin_interplanetary_travel()
+    intertravel.look_in_direction_of_planet(0)
+    intertravel.take_picture()
+    
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
     # Adjust coasttime to fit trajectory
@@ -252,6 +255,51 @@ def liftoff():
     plt.xlabel('x [AU]', fontsize=12)
     plt.ylabel('y [AU]', fontsize=12)
 
+def orbit_analysis(pos, vel, land):
+
+    r = np.linalg.norm(pos)
+    v = np.linalg.norm(vel)
+    print(f'r,v = {r}, {v}')
+    print(f'm = {land.mission.spacecraft_mass} kg')
+    e_theta = -np.cross(pos, np.array([0,0,1]))/r
+    print(f"e_r prikket med e_theta{np.dot(pos/r, e_theta)}")
+    v_theta = np.dot(vel, e_theta)
+    v_r = np.linalg.norm(vel-e_theta*v_theta)
+    print(f'sqrt(v_r^2 + v_theta^2) = {np.sqrt(v_theta**2 + v_r**2)}')
+    theta = np.arccos(pos[0]/r)
+    print(f'v_theta, v_r = {v_theta}, {v_r}')
+    if pos[1] < 0:
+        theta = -theta
+
+    m_1 = land.mission.spacecraft_mass
+    m_2 = cs.m_sun*system.masses[1]
+    M = m_1 + m_2
+    mu_hat = m_1*m_2/M
+    h = r*v_theta
+    p = h**2/M/cs.G
+    print(f'p = {p}')
+    
+    E = 1/2*mu_hat*v**2 - cs.G*M*mu_hat/r
+    print(f'E = {E}')
+
+    e = np.sqrt(2*E*p/mu_hat/cs.G/M+1)
+    print(f'e = {e}')
+    a = p/(1-e**2)
+    b = a*np.sqrt(1-e**2)
+    P = 2*np.pi*a*b/h
+    print(f'a = {a}m\nb = {b}m\nP = {P}s')
+
+    f = np.arccos((p-r)/e/r)
+    if v_r < 0:
+        f = -f
+    alpha = theta-f
+
+    f = np.linspace(0, 2*np.pi, 1000, endpoint=False)
+
+    r = p/(1+e*np.cos(f))
+
+    return r, f, alpha, p, e
+
 def stabilize_orbit():
     time_start_launch, phi0, travel_duration, endpoint = plan_trajectory()
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
@@ -273,93 +321,56 @@ def stabilize_orbit():
     land = mission.begin_landing_sequence()
     ################
 
-    # positions = []
     time_step = 1000
-    n = 100
-    # for _ in range(n):
-    #     land.fall(time_step)
-    #     pos = land.orient()[1]
-    #     positions.append(pos)
+    n = 1000
+    positions = []
+    for _ in range(35):
+        land.fall(time_step)
+        pos = land.orient()[1]
+        positions.append(pos)
     
     t0, r0, v0 = land.orient()
+    theta = np.angle(complex(r0[0], r0[1]))
     v_stable = np.sqrt(cs.G*cs.m_sun*planet_masses[1]/np.linalg.norm(r0))
     e_theta = np.array([-r0[1]/np.linalg.norm(r0), r0[0]/np.linalg.norm(r0), 0])
     dv_inj = e_theta*v_stable - v0
 
     print('#'*20)
+    print(f'v0 = {v0}')
+    print(f'v_stable*e_theta = {e_theta*v_stable}')
+    print(f'theta = {theta}')
     print(f'dv_inj = {dv_inj}')
     print('#'*20)
     land.boost(dv_inj)
+    rf, vf = land.orient()[1:]
+    r, f, alpha, p, e = orbit_analysis(rf,vf,land)
 
     pos_after_boost = []
-    for _ in range(n):
+    for _ in range(3*n):
         land.fall(time_step)
         pos = land.orient()[1]
         pos_after_boost.append(pos)
 
-    # positions = np.array(positions)
+    positions = np.array(positions)
     pos_after_boost = np.array(pos_after_boost)
 
     land.look_in_direction_of_planet(1)
     land.take_picture()
 
     plt.figure(figsize=(8,8))
-    #plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
+    # plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
     plt.plot(pos_after_boost[:,0], pos_after_boost[:,1], color='red', label='Bane etter injeksjonsmanøver')
     # plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
-    #plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1], color='orange', label='Boost dv: injeksjonsmanøveren', scale=2e3, width= 0.005)
+    # plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1], color='orange', label='Boost $(\\Delta$'+'v'+'$)_{inj}$: injeksjonsmanøveren', scale=2e3, width= 0.005)
     plt.scatter(0,0,label='Tvekne', color='blue')
     plt.xlabel('x [m]', fontsize=12)
     plt.ylabel('y [m]', fontsize=12)
 
-
-    r = np.linalg.norm(r0)
-    v = np.linalg.norm(v0)
-    print(f'r,v = {r}, {v}')
-    print(f'm = {land.mission.spacecraft_mass} kg')
-    # e_theta = np.cross(r0, np.array([0,0,1]))/r
-    print(f"e_r prikket med e_theta{np.dot(r0/r, e_theta)}")
-    v_theta = np.dot(v0, e_theta)
-    v_r = np.linalg.norm(v0-e_theta*v_theta)
-    print(f'sqrt(v_r^2 + v_theta^2) = {np.sqrt(v_theta**2 + v_r**2)}')
-    theta = np.arccos(r0[0]/r)
-    print(v_theta, v_r)
-    print(np.dot(r0/r, v0))
-    print(np.dot(r0/r, r0), r)
-    if r0[1] < 0:
-        theta = -theta
-
-    m_1 = land.mission.spacecraft_mass
-    m_2 = cs.m_sun*system.masses[1]
-    M = m_1 + m_2
-    mu_hat = m_1*m_2/M
-    h = r*v_theta
-    p = h**2/M/cs.G
-    print(p)
-    
-
-    T = 1/2*mu_hat*v**2
-    U = - cs.G*M*mu_hat/r
-    E = 1/2*mu_hat*v**2 - cs.G*M*mu_hat/r
-    print(E, T, U)
-
-    e = np.sqrt(2*E*p/mu_hat/M+1)
-    print(e)
-    a = p/(1-e**2)
-    b = a*np.sqrt(1-e**2)
-    P = 2*np.pi*a*b/h
-    print(f'a = {a}m\nb = {b}m\nP = {P}s')
-
-    f = np.arccos((p-r)/e*r)
-    if v_r < 0:
-        f = -f
-    omega = theta-f
-
-    f = np.linspace(0, 2*np.pi, 1000, endpoint=False)
-
-    r = p/(1+e*np.cos(f))
-
-    plt.plot(np.cos(f+omega)*r, np.sin(f+omega)*r, label="nye greier")
+    plt.plot(np.cos(f+alpha)*r, np.sin(f+alpha)*r, color='black', linestyle='--', label="Kepler-banen: $r(f) = \\frac{p}{1+e\\cos{f}}$")
+    plt.scatter(p/(1+e)*np.cos(alpha), p/(1+e)*np.sin(alpha), color='purple')
+    plt.scatter(p/(1-e)*np.cos(alpha+np.pi), p/(1-e)*np.sin(alpha+np.pi), color='purple')
+    plt.figtext(0.65, 0.83, 'Apoapsis', fontsize=12)
+    plt.figtext(0.25, 0.15, 'Periapsis', fontsize=12)
 
 
 
@@ -368,6 +379,6 @@ if __name__ == "__main__":
     # plan_trajectory(plot=True, plot_system=True)
     stabilize_orbit()
     plt.axis('equal')
-    plt.legend(loc='lower left')
+    plt.legend(loc='upper left', fontsize=12)
     plt.show()
     
