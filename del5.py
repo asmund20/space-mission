@@ -1,3 +1,10 @@
+#=======================#
+#   IKKE BRUKT KODEMAL  #
+#=======================#
+
+# Men vi har brukt snarvei, siden vi ikke gjorde A og B del 4
+# og trengte hjelp til å få sonden i bane rundt Tvekne.
+
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.utils as ut
 import ast2000tools.constants as cs
@@ -5,8 +12,6 @@ import matplotlib.pyplot as plt
 from ast2000tools.space_mission import SpaceMission
 from ast2000tools.shortcuts import SpaceMissionShortcuts
 from reference_frame import sim_launch
-#from del4 import triliteration
-#from del4 import rel_vel_spacecraft_xy as doppler
 from numba import jit
 import numpy as np
 
@@ -14,13 +19,18 @@ seed = 59529
 system = SolarSystem(seed)
 mission = SpaceMission(seed)
 
+### SHORTCUT ###
 code_unstable_orbit = 67311
 code_orientation_data = 9851
 shortcut = SpaceMissionShortcuts(mission, [code_orientation_data])
 unstable_orbit = SpaceMissionShortcuts(mission, [code_unstable_orbit])
+################
 
+# Read planet positions and velocitites from part 2
 pos_planets = np.load('positions.npy')
 vel_planets = np.load("velocities.npy")
+
+# Read rocket altitude from launch in part 1
 rocket_altitude = np.load('rocket_position.npy')
 launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)))
 
@@ -30,8 +40,27 @@ planet_masses = system.masses
 timesteps_planets = len(pos_planets[0,0])
 known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
 
+
+
 @jit(nopython=True)
 def trajectory(initial_time, position, velocity, N_steps, dt):
+    """
+    Simulates the trajectory from initial_time to (initial_time + N_steps*dt)
+    only taking into account the gravitational pull of the planets in Dagobah
+    and the star.
+    ---------------------------------
+    Input: 
+        initial_time - time to start trajectory
+        position - initial position of probe
+        velocity - initial velocity of probe
+        N_steps - how many timesteps to simulate trajectory
+        dt - timestep
+
+    Returns:
+        t - time at the end of trajectory
+        position - final position after simulated trajectory
+        velocity - final velocity after simulated trajectory
+    """
 
     desired_times = np.linspace(initial_time, initial_time+N_steps*dt, N_steps)
     planet_pos_interp = np.zeros((2, len(pos_planets[0]), N_steps))
@@ -44,10 +73,12 @@ def trajectory(initial_time, position, velocity, N_steps, dt):
     t = initial_time
 
     while i < N_steps:
+        # Calculate acceleration of probe
         g = -cs.G_sol*star_mass*position/np.linalg.norm(position)**3
         for planet, planet_mass in enumerate(planet_masses):
             g += cs.G_sol*planet_mass*(planet_pos_interp[:,planet,i]-position)/np.linalg.norm(planet_pos_interp[:,planet,i]-position)**3
 
+        # Numerical integration: Euler-Cromer
         velocity += g*dt
         position += velocity*dt
 
@@ -56,10 +87,17 @@ def trajectory(initial_time, position, velocity, N_steps, dt):
 
     return t, position, velocity
 
+
+
 def get_launch_parameters():
     """
-    Returns: t0 - launchtime
-            phi0 - initial angle
+    Estimates the launch parameters based on the intuitive idea
+    sketched in the article.
+    -------------------------------
+    Returns: 
+        t0 - launchtime
+        phi0 - estimated initial angle
+        time - estimated travel duration
     """
     # r0: position Zeron, r1: position Tvekne
     r0, r1 = pos_planets[:,0,:], pos_planets[:,1,:]
@@ -111,8 +149,19 @@ def get_launch_parameters():
 
 
 def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planlagt bane"):
-
-    # t, position, velocity = trajectory(t, position, velocity, time)
+    """
+    Tests if preliminary trajectory plan i successful.
+    -------------------------------------------------
+    Inputs:
+        travel_start_time - initial time of trajectory
+        position - initial position
+        velocity - initial velocity
+        travel_duration - travel duration of trajectory
+        plot - if True, plots the trajectory and final position of probe
+        plot_system - if True, plots planets and star
+    Returns:
+        position - final position of probe
+    """
     N = 1000
     p = np.zeros((N,2))
     p[0] = position
@@ -128,22 +177,23 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
     rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
     l = np.linalg.norm(position)*np.sqrt(system.masses[1]/10/system.star_mass)
     in_orbit = np.linalg.norm(rocket_from_tvekne) < l
+    rad_vel = np.dot(velocity, position)/np.linalg.norm(position)
+    print('#'*25)
     print(f"Close enough to Tvekne for orbit? {in_orbit}")
     print(f"position: {position} AU\nvelocity: {velocity} AU/yr")
     print("Distance from Tvekne/desired distance:", np.linalg.norm(rocket_from_tvekne)/l)
     print(f"Velocity Tvekne: {vel_planets[:,1,int(t/1e-4)]} AU/yr")
-
-    rad_vel = np.dot(velocity, position)/np.linalg.norm(position)
     print(f"Final radial velocity of rocket: {rad_vel} AU/yr")
+    print('#'*25)
 
     if plot:
         plt.figure(figsize=(8,8))
-        theta = np.linspace(0,2*np.pi,1000)
         plt.scatter(position[0], position[1], color='green', label="Sonde")
         plt.plot(p[1:,0], p[1:,1], label=trajectory_label, color='green')
 
     if plot_system:
         plt.scatter(0,0, color='orange', label="Stellaris Skarsgård")
+        theta = np.linspace(0,2*np.pi,1000)
         plt.plot(l*np.cos(theta)+pos_planets[0,1,int((t)/1e-4)], l*np.sin(theta)+pos_planets[1,1,int((t)/1e-4)], label="Avstand fra Tvekne < l")
         i_s = int(travel_start_time/1e-4)
         i_f = int(t/1e-4) + 1
@@ -159,30 +209,48 @@ def test(travel_start_time, position, velocity, travel_duration, plot=False, plo
 
 
 def plan_trajectory(plot=False, plot_system=False):
-    launch_time, phi, travel_duration = get_launch_parameters()
+    """
+    Plan the preliminary trajectory by adjusting the launch parameters.
+    -------------------------------------------------------------------
+    Inputs:
+        plot - if True, plots the trajectory and final position of probe
+        plot_system - if True, plots planets and star
+    
+    Returns:
+        launch_time - time to launch the rocket 
+        theta0 - launch angle
+        travel_duration - duration of planned trajectory
+        endpoint - final position of probe
+    """
+    # Initial parameters from intuitive idea.
+    launch_time, theta, travel_duration = get_launch_parameters()
 
-    # adaptation of the parameters by trial and error
+    # Adaptation of the parameters by trial and error
     launch_time += 0
-    phi += 0.111
+    theta += 0.111
     travel_duration += 0.8493
 
-    r, vf, r0, phi0 = sim_launch(launch_time, phi)
-
+    # Simulate launch
+    r, vf, r0, theta0 = sim_launch(launch_time, theta)
     travel_start_time = launch_time + launch_duration
     endpoint = test(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
 
-    return launch_time, phi0, travel_duration, endpoint
+    return launch_time, theta0, travel_duration, endpoint
 
 
 
 def liftoff():
-    # phi0 is the launch angle defined from the x-axis.
-    time_start_launch, phi0, travel_duration, endpoint = plan_trajectory(plot=True)
-    print(phi0)
-    rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
+    """
+    Actual launch and trajectory from Zeron to Tvekne.
+    --------------------------------------------------
+    """
+    # Plan preliminary trajectory
+    time_start_launch, theta0, travel_duration, endpoint = plan_trajectory(plot=True)
+    # Simulate launch with said parameters ^
+    rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, theta0)
     fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
 
-    # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
+    # Verify successful launch
     mission.set_launch_parameters(thrust, fuel_consumption, fuel, ut.yr_to_s(launch_duration), rocket_positions_during_launch[0], time_start_launch)
     mission.launch_rocket()
     mission.verify_launch_result(rocket_positions_during_launch[-1])
@@ -192,37 +260,47 @@ def liftoff():
     mission.verify_manual_orientation(sc_position, sc_velocity, sc_motion_angle)
     ################
 
+    # Start interplanetary travel
     intertravel = mission.begin_interplanetary_travel()
 
+    # Initial coordinates mesured from spacecraft
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
+
     # Adjust coasttime to fit trajectory
     coasttime = travel_duration/180
 
+    # Calculate timestep of trajectory
     N = 1000
     traj_dt = coasttime/N
-    print(f'traj_dt = {traj_dt}')
 
-    desired_position = rocket_positions_during_launch[-1]
+    # Desired initial velocity
     desired_velocity = rocket_velocity_after_launch
 
+    # Boost to achieve desired velocity
     dv = desired_velocity - it_vel + (endpoint-it_pos)/travel_duration/10
     intertravel.boost(dv)
+
     pos = it_pos
     interpositions = [pos]
 
     t = it_t
     while t < time_start_launch + travel_duration:
+
         intertravel.coast(coasttime)
+        # Expected position and velocity from simulation
         _, traj_pos, traj_vel = trajectory(t,traj_pos,traj_vel,N,traj_dt)
+        # Measured coordinates
         t, pos, vel = intertravel.orient()
         interpositions.append(pos)
 
+        # Adjust velocity to stay on track
         dv = traj_vel - vel 
-
         intertravel.boost(dv)
 
     interpositions.append(pos)
+
+    # Last attempt at boosting in general direction of Tvekne
     rot_angle = 0.7
     M = np.asarray([
         [np.cos(rot_angle), -np.sin(rot_angle)],
@@ -230,6 +308,8 @@ def liftoff():
         ])
     dv = np.matmul(M, (endpoint-pos)/coasttime/10)
     intertravel.boost(dv)
+
+    # Drifting some extra to see if we can reach Tvekne
     for _ in range(10):
         intertravel.coast(coasttime*2)
         t, pos, vel = intertravel.orient()
@@ -240,6 +320,7 @@ def liftoff():
     print(f"Amount of fuel left in the tank: {intertravel.remaining_fuel_mass} kg")
     print(f"Distance to Tvekne: {np.linalg.norm(interpositions[-1]-pos_planets[:,1,int((t)/1e-4)])}")
 
+    # Plotting
     plt.scatter(0,0, color='orange', label="Stellaris Skarsgård")
     l = np.linalg.norm(interpositions[-1])*np.sqrt(system.masses[1]/10/system.star_mass)
     theta = np.linspace(0,2*np.pi,1000)
@@ -254,19 +335,37 @@ def liftoff():
     plt.xlabel('x [AU]', fontsize=12)
     plt.ylabel('y [AU]', fontsize=12)
 
-def orbit_analysis(pos, vel, land):
 
+
+def orbit_analysis(pos, vel, land):
+    """
+    Analyse the final orbit of the spacecraft around Tvekne.
+    -------------------------------------------------------
+    Inputs:
+        pos - position of spacecraft right after injection maneuver
+        vel - velocity of spacecraft right after injection maneuver
+        land - landing object from ast2000tools
+    
+    Returns:
+        r - distances from Tvekne calculated analytically with Kepler orbit
+        f - angles measured from periapsis: [0, 2pi)
+        alpha - angle to periapsis from x-axis
+        p - h^2/GM use to plot orbit later
+
+    """
     r = np.linalg.norm(pos)
     v = np.linalg.norm(vel)
-    print(f'r,v = {r}, {v}')
-    print(f'm = {land.mission.spacecraft_mass} kg')
     e_theta = -np.cross(pos, np.array([0,0,1]))/r
-    print(f"e_r prikket med e_theta{np.dot(pos/r, e_theta)}")
     v_theta = np.dot(vel, e_theta)
     v_r = np.linalg.norm(vel-e_theta*v_theta)
-    print(f'sqrt(v_r^2 + v_theta^2) = {np.sqrt(v_theta**2 + v_r**2)}')
     theta = np.arccos(pos[0]/r)
+
+    print(f'r,v = {r}, {v}')
+    print(f'm = {land.mission.spacecraft_mass} kg')
+    print(f"e_r prikket med e_theta{np.dot(pos/r, e_theta)}")
+    print(f'sqrt(v_r^2 + v_theta^2) = {np.sqrt(v_theta**2 + v_r**2)}')
     print(f'v_theta, v_r = {v_theta}, {v_r}')
+
     if pos[1] < 0:
         theta = -theta
 
@@ -283,6 +382,7 @@ def orbit_analysis(pos, vel, land):
 
     e = np.sqrt(2*E*p/mu_hat/cs.G/M+1)
     print(f'e = {e}')
+
     a = p/(1-e**2)
     b = a*np.sqrt(1-e**2)
     P = 2*np.pi*a*b/h
@@ -293,18 +393,32 @@ def orbit_analysis(pos, vel, land):
         f = -f
     alpha = theta-f
 
+    # Kepler orbit
     f = np.linspace(0, 2*np.pi, 1000, endpoint=False)
-
     r = p/(1+e*np.cos(f))
 
-    return r, f, alpha, p, e
+    print(f'Periapsis: {np.linalg.norm([p/(1+e)*np.cos(alpha),p/(1+e)*np.sin(alpha)])}\n{[p/(1+e)*np.cos(alpha),p/(1+e)*np.sin(alpha)]}')
+    print(f'Apoapsis: {np.linalg.norm([p/(1-e)*np.cos(alpha+np.pi),p/(1-e)*np.sin(alpha+np.pi)])}\n{[p/(1-e)*np.cos(alpha+np.pi),p/(1-e)*np.sin(alpha+np.pi)]}')
+
+    # Plotting
+    plt.plot(np.cos(f+alpha)*r, np.sin(f+alpha)*r, color='black', linestyle='--', label="Kepler-banen: $r(f) = \\frac{p}{1+e\\cos{f}}$")
+    plt.scatter(p/(1+e)*np.cos(alpha), p/(1+e)*np.sin(alpha), color='purple')
+    plt.scatter(p/(1-e)*np.cos(alpha+np.pi), p/(1-e)*np.sin(alpha+np.pi), color='purple')
+    plt.figtext(0.65, 0.83, 'Apoapsis', fontsize=12)
+    plt.figtext(0.25, 0.15, 'Periapsis', fontsize=12)
+
+
 
 def stabilize_orbit():
+    """
+    Stabilize the elliptical orbit of the spacecraft around Tvekne.
+    --------------------------------------------------------------
+    """
     time_start_launch, phi0, travel_duration, endpoint = plan_trajectory()
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
 
-    # gjør greier i mission som er nødvendige for å kunne få distnces og doppler-skifer
+    # Verify launch
     mission.set_launch_parameters(thrust, fuel_consumption, fuel, ut.yr_to_s(launch_duration), rocket_positions_during_launch[0], time_start_launch)
     mission.launch_rocket()
     mission.verify_launch_result(rocket_positions_during_launch[-1])
@@ -320,6 +434,7 @@ def stabilize_orbit():
     land = mission.begin_landing_sequence()
     ################
 
+    # Free fall some time before injection maneuver
     time_step = 1000
     n = 1000
     positions = []
@@ -328,6 +443,7 @@ def stabilize_orbit():
         pos = land.orient()[1]
         positions.append(pos)
     
+    # Calculates injection maneuver boost
     t0, r0, v0 = land.orient()
     theta = np.angle(complex(r0[0], r0[1]))
     v_stable = np.sqrt(cs.G*cs.m_sun*planet_masses[1]/np.linalg.norm(r0))
@@ -340,10 +456,12 @@ def stabilize_orbit():
     print(f'theta = {theta}')
     print(f'dv_inj = {dv_inj}')
     print('#'*20)
-    land.boost(dv_inj)
-    rf, vf = land.orient()[1:]
-    r, f, alpha, p, e = orbit_analysis(rf,vf,land)
 
+    land.boost(dv_inj)
+    # Position and velocity right after boost
+    rf, vf = land.orient()[1:]
+
+    # Let spacecraft orbit for some time in its circular orbit
     pos_after_boost = []
     for _ in range(3*n):
         land.fall(time_step)
@@ -353,26 +471,21 @@ def stabilize_orbit():
     positions = np.array(positions)
     pos_after_boost = np.array(pos_after_boost)
 
+    # Take picture of Tvekne
     land.look_in_direction_of_planet(1)
     land.take_picture()
 
-    print(f'Periapsis: {np.linalg.norm([p/(1+e)*np.cos(alpha),p/(1+e)*np.sin(alpha)])}\n{[p/(1+e)*np.cos(alpha),p/(1+e)*np.sin(alpha)]}')
-    print(f'Apoapsis: {np.linalg.norm([p/(1-e)*np.cos(alpha+np.pi),p/(1-e)*np.sin(alpha+np.pi)])}\n{[p/(1-e)*np.cos(alpha+np.pi),p/(1-e)*np.sin(alpha+np.pi)]}')
-
     plt.figure(figsize=(8,8))
-    # plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
+    plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
     plt.plot(pos_after_boost[:,0], pos_after_boost[:,1], color='red', label='Bane etter injeksjonsmanøver')
-    # plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
-    # plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1], color='orange', label='Boost $(\\Delta$'+'v'+'$)_{inj}$: injeksjonsmanøveren', scale=2e3, width= 0.005)
+    plt.scatter(positions[-1,0], positions[-1,1], color='black', label='Sonden')
+    plt.quiver(positions[-1,0], positions[-1,1], dv_inj[0], dv_inj[1], color='orange', label='Boost $(\\Delta$'+'v'+'$)_{inj}$: injeksjonsmanøveren', scale=2e3, width= 0.005)
     plt.scatter(0,0,label='Tvekne', color='blue')
     plt.xlabel('x [m]', fontsize=12)
     plt.ylabel('y [m]', fontsize=12)
 
-    plt.plot(np.cos(f+alpha)*r, np.sin(f+alpha)*r, color='black', linestyle='--', label="Kepler-banen: $r(f) = \\frac{p}{1+e\\cos{f}}$")
-    plt.scatter(p/(1+e)*np.cos(alpha), p/(1+e)*np.sin(alpha), color='purple')
-    plt.scatter(p/(1-e)*np.cos(alpha+np.pi), p/(1-e)*np.sin(alpha+np.pi), color='purple')
-    plt.figtext(0.65, 0.83, 'Apoapsis', fontsize=12)
-    plt.figtext(0.25, 0.15, 'Periapsis', fontsize=12)
+    # Analyse and plot orbit
+    orbit_analysis(rf,vf,land)
 
 
 
