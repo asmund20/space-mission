@@ -178,6 +178,7 @@ def plan_trajectory(plot=False, plot_system=False):
 def liftoff():
     # phi0 is the launch angle defined from the x-axis.
     time_start_launch, phi0, travel_duration, endpoint = plan_trajectory(plot=True)
+    print(phi0)
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
 
@@ -192,9 +193,7 @@ def liftoff():
     ################
 
     intertravel = mission.begin_interplanetary_travel()
-    intertravel.look_in_direction_of_planet(0)
-    intertravel.take_picture()
-    
+
     it_t, it_pos, it_vel = intertravel.orient()
     traj_pos, traj_vel = it_pos, it_vel
     # Adjust coasttime to fit trajectory
@@ -356,6 +355,9 @@ def stabilize_orbit():
 
     land.look_in_direction_of_planet(1)
     land.take_picture()
+
+    print(f'Periapsis: {np.linalg.norm([p/(1+e)*np.cos(alpha),p/(1+e)*np.sin(alpha)])}\n{[p/(1+e)*np.cos(alpha),p/(1+e)*np.sin(alpha)]}')
+    print(f'Apoapsis: {np.linalg.norm([p/(1-e)*np.cos(alpha+np.pi),p/(1-e)*np.sin(alpha+np.pi)])}\n{[p/(1-e)*np.cos(alpha+np.pi),p/(1-e)*np.sin(alpha+np.pi)]}')
 
     plt.figure(figsize=(8,8))
     # plt.plot(positions[:,0], positions[:,1], color='black', linestyle='--', label='Bane før injeksjonsmanøver')
