@@ -148,7 +148,7 @@ def get_launch_parameters():
 
 
 
-def test(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planlagt bane"):
+def test_trajectory(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planlagt bane"):
     """
     Tests if preliminary trajectory plan i successful.
     -------------------------------------------------
@@ -233,7 +233,7 @@ def plan_trajectory(plot=False, plot_system=False):
     # Simulate launch
     r, vf, r0, theta0 = sim_launch(launch_time, theta)
     travel_start_time = launch_time + launch_duration
-    endpoint = test(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
+    endpoint = test_trajectory(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
 
     return launch_time, theta0, travel_duration, endpoint
 
