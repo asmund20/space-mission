@@ -345,13 +345,6 @@ def orbit_analysis(pos, vel, land):
         pos - position of spacecraft right after injection maneuver
         vel - velocity of spacecraft right after injection maneuver
         land - landing object from ast2000tools
-    
-    Returns:
-        r - distances from Tvekne calculated analytically with Kepler orbit
-        f - angles measured from periapsis: [0, 2pi)
-        alpha - angle to periapsis from x-axis
-        p - h^2/GM use to plot orbit later
-
     """
     r = np.linalg.norm(pos)
     v = np.linalg.norm(vel)
