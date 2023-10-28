@@ -96,7 +96,7 @@ def get_launch_parameters():
     -------------------------------
     Returns: 
         t0 - launchtime
-        phi0 - estimated initial angle
+        theta0 - estimated initial angle
         time - estimated travel duration
     """
     # r0: position Zeron, r1: position Tvekne
@@ -117,34 +117,34 @@ def get_launch_parameters():
     x1_i, y1_i = r1[:,i]
     r1_i = np.linalg.norm(r1[:,i])
     
-    # Unit vectors for angle phi for the two planets
-    phihat0 = np.array([-y0_i/r0_i, x0_i/r0_i])
-    phihat1 = np.array([-y1_i/r1_i, x1_i/r1_i])
+    # Unit vectors for angle theta for the two planets
+    thetahat0 = np.array([-y0_i/r0_i, x0_i/r0_i])
+    thetahat1 = np.array([-y1_i/r1_i, x1_i/r1_i])
 
     # Angular velocity of the planets
-    v0_phi = np.dot(v0_i, phihat0)
-    v1_phi = np.dot(v1_i, phihat1)
+    v0_theta = np.dot(v0_i, thetahat0)
+    v1_theta = np.dot(v1_i, thetahat1)
 
     # Angular velocity of the rocket
     # Meant to match the angular velocity of Tvekne 
-    vphi_rocket = v1_phi - v0_phi
+    vtheta_rocket = v1_theta - v0_theta
 
     # Final velocity of rocket from simulation
     v_esc = np.linalg.norm(sim_launch(0,0)[1])
     # Radial velocity of rocket
-    vr_rocket = np.sqrt(v_esc**2 - vphi_rocket**2)
+    vr_rocket = np.sqrt(v_esc**2 - vtheta_rocket**2)
 
     # Find angle to Zeron
-    phi_i_candidates = np.array([np.arccos(x0_i/r0_i), -np.arccos(x0_i/r0_i)])
-    j = np.argmin(abs(y0_i/r0_i - np.sin(phi_i_candidates)))
-    phi_i = phi_i_candidates[j]
+    theta_i_candidates = np.array([np.arccos(x0_i/r0_i), -np.arccos(x0_i/r0_i)])
+    j = np.argmin(abs(y0_i/r0_i - np.sin(theta_i_candidates)))
+    theta_i = theta_i_candidates[j]
 
     # Launch angle
-    phi0 = phi_i + np.arctan(vphi_rocket/vr_rocket)
+    theta0 = theta_i + np.arctan(vtheta_rocket/vr_rocket)
 
     time = np.linalg.norm(r1[:,i]-r0[:,i])/abs(vr_rocket)
 
-    return t0, phi0, time
+    return t0, theta0, time
 
 
 
