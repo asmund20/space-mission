@@ -382,7 +382,7 @@ def orbit_analysis(pos, vel, land):
     print(f'a = {a}m\nb = {b}m\nP = {P}s')
 
     f = np.arccos((p-r)/e/r)
-    if v_r < 0:
+    if v_r * v_theta < 0:
         f = -f
     alpha = theta-f
 
