@@ -81,6 +81,7 @@ print('| Gas                    | dlambda   | Temperature   | F_min     |')
 print('*'*66)
 
 j = 0
+fig, axs = plt.subplots(nrows=3, ncols=4)
 for lmbda0 in spectral_lines.keys():
     
     i = np.argmin(abs(lmbda-lmbda0))
@@ -96,11 +97,13 @@ for lmbda0 in spectral_lines.keys():
     
     std = (lmbda0/cs.c)*np.sqrt(cs.k_B*temp/m)
     F = 1 +(F_min-1)*np.exp(-((lmbda[i-N:i+N]+doppler-lmbda0)**2)/(2*std**2))
-    plt.plot(lmbda[i-N:i+N], flux[i-N:i+N])
-    plt.plot(lmbda[i-N:i+N], F, color='red')
+    axs[j//4, j%4].plot(lmbda[i-N:i+N], flux[i-N:i+N])
+    axs[j//4, j%4].plot(lmbda[i-N:i+N], F, color='red')
 
-    plt.show()
     j += 1
+    
 print('*'*66)
+plt.show()
+
 
     
