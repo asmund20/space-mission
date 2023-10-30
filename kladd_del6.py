@@ -7,6 +7,7 @@ from ast2000tools.shortcuts import SpaceMissionShortcuts
 from reference_frame import sim_launch
 from del5 import plan_trajectory
 import numpy as np
+import copy
 
 
 seed = 59529
@@ -93,14 +94,16 @@ def landing_site_position(theta, phi, time):
     return theta, phi+time*omega
 
 
-
+# this changes the position of your spacecraft, call with a copy if 
+# you want to avoid that
 def avg_dist(landing_sequence, runtime):
     l = [np.linalg.norm(landing_sequence.orient()[1])]
 
-    dt = 1e3
+    dt = max(1e3, runtime/1000)
     t = 0
 
     while t < runtime:
+        landing_sequence.fall(dt)
         _, p, _ = landing_sequence.orient()
         l.append(np.linalg.norm(p))
         t += dt
@@ -108,11 +111,13 @@ def avg_dist(landing_sequence, runtime):
     return sum(l)/len(l)
 
 
-
-
 def verify_not_in_atmosphere(landing_sequence):
-    ...
-    
+    time_per_sim = 1e6
+    tolerance = np.linalg.norm(landing_sequence.orient()[1])/10
+
+    landing_sequence = copy.deepcopy(landing_sequence)
+
+    return avg_dist(landing_sequence, time_per_sim) - avg_dist(landing_sequence, time_per_sim) < tolerance
 
 
 def main():
@@ -123,9 +128,21 @@ def main():
     landing_sequence.fall(100)
     t, p, v = landing_sequence.orient()
     print(t, p, v)
-    landing_sequence.boost(-0.1*v)
+    landing_sequence.boost(-0.726*v)
 
     print(avg_dist(landing_sequence, 100))
+    print(verify_not_in_atmosphere(landing_sequence))
+
+    landing_sequence.fall(1e6)
+
+    N = 10
+    orbit_for = 700000
+    dt = orbit_for/N
+
+    for i in range(N):
+        landing_sequence.look_in_direction_of_planet(1)
+        landing_sequence.take_picture(filename=f"landing_picture{i}.xml")
+        landing_sequence.fall(dt)
 
 
 
