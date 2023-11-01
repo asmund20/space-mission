@@ -127,15 +127,35 @@ def main():
     landing_sequence.fall(100)
     t, p, v = landing_sequence.orient()
     print(t, p, v)
+
+    # slowing down in order to get an orbit that is as close to the planet
+    # as possible without entering the atmosphere
     landing_sequence.boost(-0.726*v)
 
-    print(avg_dist(landing_sequence, 100))
-    print(verify_not_in_atmosphere(landing_sequence))
+    dt = 10000
+    _, p, v = landing_sequence.orient()
+    landing_sequence.fall(dt)
 
-    landing_sequence.fall(1e6)
+    while np.linalg.norm(landing_sequence.orient()[1]) < np.linalg.norm(p):
+        _, p, v = landing_sequence.orient()
+        landing_sequence.fall(dt)
+
+    _, p, v = landing_sequence.orient()
+    # Calculates injection maneuver boost
+    planet_mass = system.masses[1]
+    theta = np.angle(complex(p[0], p[1]))
+    v_stable = np.sqrt(cs.G*cs.m_sun*planet_mass/np.linalg.norm(p))
+    e_theta = np.array([-p[1]/np.linalg.norm(p), p[0]/np.linalg.norm(p), 0])
+    dv_inj = e_theta*v_stable - v
+
+    if np.linalg.norm(dv_inj) > np.linalg.norm(v):
+        dv_inj = -e_theta*v_stable-v
+
+    landing_sequence.boost(dv_inj)
+
 
     N = 10
-    orbit_for = 700000
+    orbit_for = 5*70000
     dt = orbit_for/N
 
     for i in range(N):
