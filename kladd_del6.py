@@ -122,7 +122,6 @@ def verify_not_in_atmosphere(landing_sequence):
 
 def main():
     landing_sequence, planet_positions = initiate_circular_orbit()
-    landing_site_position(0,0,0)
     t, p, v = landing_sequence.orient()
     print(t, p, v)
     landing_sequence.fall(100)
