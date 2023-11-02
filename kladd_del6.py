@@ -94,30 +94,12 @@ def landing_site_position(theta, phi, time):
     return theta, phi+time*omega
 
 
-# this changes the position of your spacecraft, call with a copy if 
-# you want to avoid that
-def avg_dist(landing_sequence, runtime):
-    l = [np.linalg.norm(landing_sequence.orient()[1])]
-
-    dt = max(1e3, runtime/1000)
-    t = 0
-
-    while t < runtime:
-        landing_sequence.fall(dt)
-        _, p, _ = landing_sequence.orient()
-        l.append(np.linalg.norm(p))
-        t += dt
-
-    return sum(l)/len(l)
-
-
 def verify_not_in_atmosphere(landing_sequence):
-    time_per_sim = 1e6
-    tolerance = np.linalg.norm(landing_sequence.orient()[1])/10
+    fall_time = 1e7
 
     landing_sequence = copy.deepcopy(landing_sequence)
 
-    return avg_dist(landing_sequence, time_per_sim) - avg_dist(landing_sequence, time_per_sim) < tolerance
+    landing_sequence.fall(fall_time)
 
 
 def main():
@@ -130,9 +112,11 @@ def main():
 
     # slowing down in order to get an orbit that is as close to the planet
     # as possible without entering the atmosphere
-    landing_sequence.boost(-0.726*v)
+    landing_sequence.boost(-0.7268468*v)
 
-    dt = 10000
+    verify_not_in_atmosphere(landing_sequence)
+
+    dt = 100
     _, p, v = landing_sequence.orient()
     landing_sequence.fall(dt)
 
@@ -162,6 +146,8 @@ def main():
         landing_sequence.look_in_direction_of_planet(1)
         landing_sequence.take_picture(filename=f"landing_picture{i}.xml")
         landing_sequence.fall(dt)
+
+    print(f"{np.linalg.norm(landing_sequence.orient()[1]):.5e}")
 
 
 
