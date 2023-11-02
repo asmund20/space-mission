@@ -112,7 +112,8 @@ def main():
 
     # slowing down in order to get an orbit that is as close to the planet
     # as possible without entering the atmosphere
-    landing_sequence.boost(-0.7268468*v)
+    #landing_sequence.boost(-0.7268468*v)
+    landing_sequence.boost(-0.7*v)
 
     verify_not_in_atmosphere(landing_sequence)
 
