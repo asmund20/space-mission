@@ -60,7 +60,7 @@ def chi_squared_test(lmbda, lmbda0, idx_lmb0, flux, sigma, m):
 
 def atmosphere_chem_comp(lmbda, flux, sigma):
     
-    print()
+    print('Finner parametre ved chi^2-test:')
     parameters = []
     for lmbda0 in tqdm.tqdm(spectral_lines.keys()):
         gas = spectral_lines[lmbda0]
@@ -119,13 +119,13 @@ def plot_sigma(sigma, lmbda, dlmbda):
     fig, axs = plt.subplots(nrows=3, ncols=4)
     ymin, ymax = min(sigma), max(sigma)
     j = 0
-    for lmbda0 in tqdm.tqdm(spectral_lines.keys()):
+    for lmbda0 in spectral_lines.keys():
         gas = spectral_lines[lmbda0]
         i = np.argmin(abs(lmbda-lmbda0))
         N = int(lmbda0*vmax_c/dlmbda)
         
         axs[j//4, j%4].set_ylim(ymin, ymax)
-        axs[j//4, j%4].plot(lmbda[i-N:i+N], sigma[i-N:i+N], label=f'$\\sigma_i$ for {gas}')
+        axs[j//4, j%4].plot(lmbda[i-N:i+N], sigma[i-N:i+N], label=f'$\\sigma_i$ rundt $\\lambda_0$ = {lmbda0}nm')
         axs[j//4, j%4].legend(loc='upper right')
                 
         j += 1
@@ -148,7 +148,7 @@ def temperature(r):
     r_iso = r0 + (T0*gamma*cs.k_B)/(2*(gamma-1)*mu*cs.m_p*g)
     
     if r > r_iso:
-        T = T0 - (gamma-1)/gamma * mu*cs.m_p*g/cs.k_B * (r_iso-r0)
+        T = T0/2
     else:
         T = T0 - (gamma-1)/gamma * mu*cs.m_p*g/cs.k_B * (r-r0)
     
@@ -178,25 +178,25 @@ def density(r):
     return pressure(r)*mu*cs.m_p/cs.k_B/temperature(r)
     
 
-# lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
-# sigma = np.load("sigma_noise.npy")[:,1]
-# dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
+lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
+sigma = np.load("sigma_noise.npy")[:,1]
+dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
+
+#parameters = atmosphere_chem_comp(lmbda, flux, sigma)
+#plot_model_over_data(flux, lmbda, dlmbda, parameters)
+plot_sigma(sigma, lmbda, dlmbda)
+
+
+# r = np.linspace(system.radii[1]*1e3,system.radii[1]*1e3 + 50000,10000)
+# temp, pres, dens = [], [], []
+# for ri in r:
+#     temp.append(temperature(ri))
+#     pres.append(pressure(ri))
+#     dens.append(density(ri))
 #
-# parameters = atmosphere_chem_comp(lmbda, flux, sigma)
-# plot_model_over_data(flux, lmbda, dlmbda, parameters)
-# plot_sigma(sigma, lmbda, dlmbda)
-
-
-r = np.linspace(system.radii[1]*1e3,system.radii[1]*1e3 + 50000,10000)
-temp, pres, dens = [], [], []
-for ri in r:
-    temp.append(temperature(ri))
-    pres.append(pressure(ri))
-    dens.append(density(ri))
-
-fig, axs = plt.subplots(1,3)
-
-axs[0].plot(r, temp)
-axs[1].plot(r, pres)
-axs[2].plot(r, dens)
-plt.show()
+# fig, axs = plt.subplots(1,3)
+#
+# axs[0].plot(r, temp)
+# axs[1].plot(r, pres)
+# axs[2].plot(r, dens)
+# plt.show()
