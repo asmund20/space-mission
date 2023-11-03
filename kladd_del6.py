@@ -74,13 +74,6 @@ def initiate_circular_orbit():
     e_theta = np.array([-r0[1]/np.linalg.norm(r0), r0[0]/np.linalg.norm(r0), 0])
     dv_inj = e_theta*v_stable - v0
 
-    print('#'*20)
-    print(f'v0 = {v0}')
-    print(f'v_stable*e_theta = {e_theta*v_stable}')
-    print(f'theta = {theta}')
-    print(f'dv_inj = {dv_inj}')
-    print('#'*20)
-
     land.boost(dv_inj)
 
     return land, pos_planets
@@ -105,12 +98,9 @@ def verify_not_in_atmosphere(landing_sequence):
 def main():
     landing_sequence, planet_positions = initiate_circular_orbit()
     t, p, v = landing_sequence.orient()
-    print(t, p, v)
     landing_sequence.fall(100)
     t, p, v = landing_sequence.orient()
-    print(t, p, v)
 
-    input(f"{np.linalg.norm(p):.2e}")
     # slowing down in order to get an orbit that is as close to the planet
     # as possible without entering the atmosphere
     #landing_sequence.boost(-0.7268468*v)
