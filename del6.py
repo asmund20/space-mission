@@ -2,9 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2
 import ast2000tools.constants as cs 
+import tqdm
+from ast2000tools.solar_system import SolarSystem
 from numba import jit
 
-np.random.seed(59529)
+seed = 59529
+system = SolarSystem(seed)
+np.random.seed(seed)
 
 vmax_c = 1e4/cs.c
 
@@ -15,9 +19,9 @@ spectral_lines = {
 }
 
 gasses = {
-    'O2': {'name': 'Oxygen', 'Z': 16, 'N':16}, 'H2O': {'name': 'Water vapor', 'Z': 10, 'N':8},
-    'CO2': {'name': 'Carbon dioxide', 'Z': 22, 'N':22}, 'CH4': {'name': 'Methane', 'Z': 10, 'N':6},
-    'CO': {'name': 'Carbon monoxide', 'Z': 14, 'N':14}, 'N2O': {'name': 'Nitrous dioxide', 'Z': 22, 'N':22}
+    'O2': {'name': 'Oxygen', 'A': 32}, 'H2O': {'name': 'Water vapor', 'A': 18},
+    'CO2': {'name': 'Carbon dioxide', 'A': 44}, 'CH4': {'name': 'Methane', 'A': 16},
+    'CO': {'name': 'Carbon monoxide', 'A': 28}, 'N2O': {'name': 'Nitrous dioxide', 'A': 44}
 }
 
 
@@ -42,7 +46,7 @@ def chi_squared_test(lmbda, lmbda0, idx_lmb0, flux, sigma, m):
     chi_values = []
     param = []
     for doppler in np.linspace(-vmax_c*lmbda0, vmax_c*lmbda0,100):
-        for temp in range(150,451,10):
+        for temp in range(150,451,5):
             for F_min in np.linspace(0.6, 1.0, 100):
                 chisqr = chi_sqr(
                     flux[idx_lmb0-N:idx_lmb0+N], lmbda[idx_lmb0-N:idx_lmb0+N],
@@ -54,56 +58,145 @@ def chi_squared_test(lmbda, lmbda0, idx_lmb0, flux, sigma, m):
 
 
 
-def atmosphere_chem_comp(lmbda, lmbda0, idx_lmb0, flux, sigma, m):
-    chi_values, param = chi_squared_test(lmbda, lmbda0, idx_lmb0, flux, sigma, m)
-    i_min = np.argmin(chi_values)
-    parameters = param[i_min]
+def atmosphere_chem_comp(lmbda, flux, sigma):
+    
+    print('Finner parametre ved chi^2-test:')
+    parameters = []
+    for lmbda0 in tqdm.tqdm(spectral_lines.keys()):
+        gas = spectral_lines[lmbda0]
+        gas_info = gasses[gas]
+        m = gas_info['A']*cs.m_p
+        i = np.argmin(abs(lmbda-lmbda0))
+        chi_values, param = chi_squared_test(lmbda, lmbda0, i, flux, sigma, m)
+        i_min = np.argmin(chi_values)
+        
+        parameters.append(param[i_min])
 
     return parameters
 
 
 
+def plot_model_over_data(flux, lmbda, dlmbda, parameters):
+    print('*'*90)
+    print('| Gas                    | lambda0  [nm]  | dlambda [nm]  | Temperature [K]  | F_min     |')
+    print('*'*90)
+
+    j = 0
+    fig, axs = plt.subplots(nrows=3, ncols=4)
+    ymin, ymax = 0.5, 1.5
+    for lmbda0 in spectral_lines.keys():
+    
+        i = np.argmin(abs(lmbda-lmbda0))
+        N = int(lmbda0*vmax_c/dlmbda)
+
+        doppler, temp, F_min = parameters[j]
+        gas = spectral_lines[lmbda0]
+        gas_info = gasses[gas]
+        m = gas_info['A']*cs.m_p
+        name = gas_info['name']
+    
+        print(f'| {name:<16} ({gas:<3}) | {lmbda0:<15.2f}| {doppler:<14.5f}| {temp:<17}| {F_min:<10.5f}|')
+    
+        std = (lmbda0/cs.c)*np.sqrt(cs.k_B*temp/m)
+        F = 1 +(F_min-1)*np.exp(-((lmbda[i-N:i+N]+doppler-lmbda0)**2)/(2*std**2))
+        axs[j//4, j%4].set_ylim(ymin, ymax)
+        axs[j//4, j%4].plot(lmbda[i-N:i+N], flux[i-N:i+N])
+        axs[j//4, j%4].plot(lmbda[i-N:i+N], F, color='red', label=f'{gas}: {lmbda0}nm')
+        axs[j//4, j%4].legend(loc='upper right')
+
+        j += 1
+    
+    print('*'*90)
+    for ax in axs.flat:
+        ax.label_outer()
+    fig.supxlabel('Bølgelengde $\\lambda$ [nm]')
+    fig.supylabel('Normalisert fluks $F$')
+    plt.show()
+
+
+
+def plot_sigma(sigma, lmbda, dlmbda):
+    fig, axs = plt.subplots(nrows=3, ncols=4)
+    ymin, ymax = min(sigma), max(sigma)
+    j = 0
+    for lmbda0 in spectral_lines.keys():
+        gas = spectral_lines[lmbda0]
+        i = np.argmin(abs(lmbda-lmbda0))
+        N = int(lmbda0*vmax_c/dlmbda)
+        
+        axs[j//4, j%4].set_ylim(ymin, ymax)
+        axs[j//4, j%4].plot(lmbda[i-N:i+N], sigma[i-N:i+N], label=f'$\\sigma_i$ rundt $\\lambda_0$ = {lmbda0}nm')
+        axs[j//4, j%4].legend(loc='upper right')
+                
+        j += 1
+    
+    for ax in axs.flat:
+        ax.label_outer()
+    fig.supxlabel('Bølgelengde $\\lambda$ [nm]')
+    fig.supylabel('Standard avvik for støyet $\\sigma_i$')
+    plt.show()
+
+
+def temperature(r):
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])/2
+    T0 = 271
+    rho0 = system.atmospheric_densities[1]
+    r0 = system.radii[1]*1e3
+    gamma = 1.4
+    g = cs.G*system.masses[1]*cs.m_sun/(r0**2)
+    
+    r_iso = r0 + (T0*gamma*cs.k_B)/(2*(gamma-1)*mu*cs.m_p*g)
+    
+    if r > r_iso:
+        T = T0/2
+    else:
+        T = T0 - (gamma-1)/gamma * mu*cs.m_p*g/cs.k_B * (r-r0)
+    
+    return T
+
+def pressure(r):
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])/2
+    T0 = 271
+    rho0 = system.atmospheric_densities[1]
+    r0 = system.radii[1]*1e3
+    p0 = rho0*cs.k_B*T0/mu/cs.m_p
+    gamma = 1.4
+    g = cs.G*system.masses[1]*cs.m_sun/(r0**2)
+    
+    r_iso = r0 + (T0*gamma*cs.k_B)/(2*(gamma-1)*mu*cs.m_p*g)
+    
+    if r > r_iso:
+        p_iso = p0 * (T0/temperature(r_iso))**(gamma/(1-gamma))
+        p = p_iso * np.exp(-(mu*cs.m_p*g)/cs.k_B/temperature(r) * (r-r_iso))
+    else:
+        p = p0 * (T0/temperature(r))**(gamma/(1-gamma))
+    
+    return p
+
+def density(r):
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])/2
+    return pressure(r)*mu*cs.m_p/cs.k_B/temperature(r)
+    
+
 lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
 sigma = np.load("sigma_noise.npy")[:,1]
 dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
 
-parameters = []
-for lmbda0 in spectral_lines.keys():
-    gas = spectral_lines[lmbda0]
-    gas_info = gasses[gas]
-    m = gas_info['Z']*cs.m_p + gas_info['N']*cs.m_p
-    i = np.argmin(abs(lmbda-lmbda0))
-    p = atmosphere_chem_comp(lmbda, lmbda0, i, flux, sigma, m)
-    parameters.append(p)
-
-print('*'*66)
-print('| Gas                    | dlambda   | Temperature   | F_min     |')
-print('*'*66)
-
-j = 0
-fig, axs = plt.subplots(nrows=3, ncols=4)
-for lmbda0 in spectral_lines.keys():
-    
-    i = np.argmin(abs(lmbda-lmbda0))
-    N = int(lmbda0*vmax_c/dlmbda)
-
-    doppler, temp, F_min = parameters[j]
-    gas = spectral_lines[lmbda0]
-    gas_info = gasses[gas]
-    m = gas_info['Z']*cs.m_p + gas_info['N']*cs.m_p
-    name = gas_info['name']
-    
-    print(f'| {name:<16} ({gas:<3}) | {doppler:<10.5f}| {temp:<14}| {F_min:<10.5f}|')
-    
-    std = (lmbda0/cs.c)*np.sqrt(cs.k_B*temp/m)
-    F = 1 +(F_min-1)*np.exp(-((lmbda[i-N:i+N]+doppler-lmbda0)**2)/(2*std**2))
-    axs[j//4, j%4].plot(lmbda[i-N:i+N], flux[i-N:i+N])
-    axs[j//4, j%4].plot(lmbda[i-N:i+N], F, color='red')
-
-    j += 1
-    
-print('*'*66)
-plt.show()
+#parameters = atmosphere_chem_comp(lmbda, flux, sigma)
+#plot_model_over_data(flux, lmbda, dlmbda, parameters)
+plot_sigma(sigma, lmbda, dlmbda)
 
 
-    
+# r = np.linspace(system.radii[1]*1e3,system.radii[1]*1e3 + 50000,10000)
+# temp, pres, dens = [], [], []
+# for ri in r:
+#     temp.append(temperature(ri))
+#     pres.append(pressure(ri))
+#     dens.append(density(ri))
+#
+# fig, axs = plt.subplots(1,3)
+#
+# axs[0].plot(r, temp)
+# axs[1].plot(r, pres)
+# axs[2].plot(r, dens)
+# plt.show()
