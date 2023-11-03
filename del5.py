@@ -483,8 +483,7 @@ def stabilize_orbit():
 
 
 if __name__ == "__main__":
-    # liftoff()
-    # plan_trajectory(plot=True, plot_system=True)
+    liftoff()
     stabilize_orbit()
     plt.axis('equal')
     plt.legend(loc='upper left', fontsize=12)
