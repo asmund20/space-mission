@@ -74,13 +74,6 @@ def initiate_circular_orbit():
     e_theta = np.array([-r0[1]/np.linalg.norm(r0), r0[0]/np.linalg.norm(r0), 0])
     dv_inj = e_theta*v_stable - v0
 
-    print('#'*20)
-    print(f'v0 = {v0}')
-    print(f'v_stable*e_theta = {e_theta*v_stable}')
-    print(f'theta = {theta}')
-    print(f'dv_inj = {dv_inj}')
-    print('#'*20)
-
     land.boost(dv_inj)
 
     return land, pos_planets
@@ -105,24 +98,19 @@ def verify_not_in_atmosphere(landing_sequence):
 def main():
     landing_sequence, planet_positions = initiate_circular_orbit()
     t, p, v = landing_sequence.orient()
-    print(t, p, v)
     landing_sequence.fall(100)
     t, p, v = landing_sequence.orient()
-    print(t, p, v)
 
     # slowing down in order to get an orbit that is as close to the planet
     # as possible without entering the atmosphere
     #landing_sequence.boost(-0.7268468*v)
-    landing_sequence.boost(-0.7*v)
-
-    verify_not_in_atmosphere(landing_sequence)
+    landing_sequence.boost(-0.8*v)
 
     dt = 100
-    _, p, v = landing_sequence.orient()
-    landing_sequence.fall(dt)
+    desired_h = 1e6 #m
+    desired_r = system.radii[1]*1e3+desired_h
 
-    while np.linalg.norm(landing_sequence.orient()[1]) < np.linalg.norm(p):
-        _, p, v = landing_sequence.orient()
+    while desired_r < np.linalg.norm(landing_sequence.orient()[1]):
         landing_sequence.fall(dt)
 
     _, p, v = landing_sequence.orient()
@@ -138,17 +126,15 @@ def main():
 
     landing_sequence.boost(dv_inj)
 
+    landing_sequence.fall(250)
+    landing_sequence.look_in_direction_of_planet(1)
+    landing_sequence.take_picture("landing_site.xml")
+    landing_pos_discovery_time, landing_pos_discovery_pos, _ = landing_sequence.orient()
+    landing_pos_discovery_radius = np.linalg.norm(landing_pos_discovery_pos)
 
-    N = 10
-    orbit_for = 5*70000
-    dt = orbit_for/N
-
-    for i in range(N):
-        landing_sequence.look_in_direction_of_planet(1)
-        landing_sequence.take_picture(filename=f"landing_picture{i}.xml")
-        landing_sequence.fall(dt)
-
-    print(f"{np.linalg.norm(landing_sequence.orient()[1]):.5e}")
+    print(f"Distance to Tvekne's center: {landing_pos_discovery_radius:.5e} m")
+    print(f"Distance to Tvekne's surface: {landing_pos_discovery_radius-system.radii[1]*1000:.5e} m")
+    print(f"Landing site coordinates: r = planet_radius, theta = 0, phi = {np.angle(complex(landing_pos_discovery_pos[0], landing_pos_discovery_pos[1]))/np.pi} pi, t = {landing_pos_discovery_time}")
 
 
 
