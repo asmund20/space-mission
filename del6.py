@@ -138,44 +138,46 @@ def plot_sigma(sigma, lmbda, dlmbda):
 
 
 def temperature(r):
-    mu = (gasses['CO']['A']+gasses['CH4']['A'])/2
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
     T0 = 271
     rho0 = system.atmospheric_densities[1]
     r0 = system.radii[1]*1e3
+    M_T = system.masses[1]*cs.m_sun
     gamma = 1.4
-    g = cs.G*system.masses[1]*cs.m_sun/(r0**2)
-    
-    r_iso = r0 + (T0*gamma*cs.k_B)/(2*(gamma-1)*mu*cs.m_p*g)
+
+    frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
+    r_iso = r0 / (1 - frac)
     
     if r > r_iso:
         T = T0/2
     else:
-        T = T0 - (gamma-1)/gamma * mu*cs.m_p*g/cs.k_B * (r-r0)
+        T = T0 - (gamma-1)/gamma * mu*cs.G*M_T/cs.k_B * (1/r0 - 1/r)
     
     return T
 
 def pressure(r):
-    mu = (gasses['CO']['A']+gasses['CH4']['A'])/2
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
     T0 = 271
     rho0 = system.atmospheric_densities[1]
     r0 = system.radii[1]*1e3
-    p0 = rho0*cs.k_B*T0/mu/cs.m_p
+    p0 = rho0*cs.k_B*T0/mu
+    M_T = system.masses[1]*cs.m_sun
     gamma = 1.4
-    g = cs.G*system.masses[1]*cs.m_sun/(r0**2)
     
-    r_iso = r0 + (T0*gamma*cs.k_B)/(2*(gamma-1)*mu*cs.m_p*g)
+    frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
+    r_iso = r0 / (1 - frac)
     
     if r > r_iso:
         p_iso = p0 * (T0/temperature(r_iso))**(gamma/(1-gamma))
-        p = p_iso * np.exp(-(mu*cs.m_p*g)/cs.k_B/temperature(r) * (r-r_iso))
+        p = p_iso * np.exp(-(2*mu*cs.G*M_T)/cs.k_B/T0 * (1/r_iso - 1/r))
     else:
         p = p0 * (T0/temperature(r))**(gamma/(1-gamma))
     
     return p
 
 def density(r):
-    mu = (gasses['CO']['A']+gasses['CH4']['A'])/2
-    return pressure(r)*mu*cs.m_p/cs.k_B/temperature(r)
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    return pressure(r)*mu/cs.k_B/temperature(r)
     
 
 lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
@@ -184,19 +186,19 @@ dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
 
 #parameters = atmosphere_chem_comp(lmbda, flux, sigma)
 #plot_model_over_data(flux, lmbda, dlmbda, parameters)
-plot_sigma(sigma, lmbda, dlmbda)
+# plot_sigma(sigma, lmbda, dlmbda)
 
 
-# r = np.linspace(system.radii[1]*1e3,system.radii[1]*1e3 + 50000,10000)
-# temp, pres, dens = [], [], []
-# for ri in r:
-#     temp.append(temperature(ri))
-#     pres.append(pressure(ri))
-#     dens.append(density(ri))
-#
-# fig, axs = plt.subplots(1,3)
-#
-# axs[0].plot(r, temp)
-# axs[1].plot(r, pres)
-# axs[2].plot(r, dens)
-# plt.show()
+r = np.linspace(system.radii[1]*1e3,system.radii[1]*1e3 + 1.3e6,10000)
+temp, pres, dens = [], [], []
+for ri in r:
+    temp.append(temperature(ri))
+    pres.append(pressure(ri))
+    dens.append(density(ri))
+
+fig, axs = plt.subplots(1,3)
+
+axs[0].semilogy(r, temp)
+axs[1].semilogy(r, pres)
+axs[2].semilogy(r, dens)
+plt.show()
