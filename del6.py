@@ -180,25 +180,48 @@ def density(r):
     return pressure(r)*mu/cs.k_B/temperature(r)
     
 
-lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
-sigma = np.load("sigma_noise.npy")[:,1]
-dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
+def plot_temp_density(altitude, N):
+    r0 = system.radii[1]*1e3
+    r = np.linspace(r0, r0+altitude, N)
+    temp, dens = np.zeros(N), np.zeros(N)
+    
+    for i in range(N):
+        temp[i] = temperature(r[i])
+        dens[i] = density(r[i])
+    
+    T0 = 271
+    gamma = 1.4
+    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    M_T = system.masses[1]*cs.m_sun
+    frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
+    r_iso = r0 / (1 - frac)
+    
+    fig, axs = plt.subplots(2, sharex=True)
+    
+    axs[0].set_xlim(r[0],r[-1])
+    axs[0].set_ylim(0,280)
+    axs[0].plot(r, temp, label='$T(r)$')
+    axs[0].plot([r_iso, r_iso],[0,T0], linestyle='--', color='black', label='$r_{iso}$')
+    axs[0].grid(visible=True)
+    axs[0].legend(fontsize=12)
+
+    axs[1].set_xlim(r[0],r[-1])
+    axs[1].plot(r, dens, color='red', label='$\\varrho (r)$')
+    axs[1].plot([r_iso, r_iso],[0,dens[0]], linestyle='--', color='black', label='$r_{iso}$')
+    axs[1].grid(visible=True)
+    axs[1].legend(fontsize=12)
+    
+    plt.show()
+    
+
+# lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
+# sigma = np.load("sigma_noise.npy")[:,1]
+# dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
 
 #parameters = atmosphere_chem_comp(lmbda, flux, sigma)
 #plot_model_over_data(flux, lmbda, dlmbda, parameters)
 # plot_sigma(sigma, lmbda, dlmbda)
 
-
-r = np.linspace(system.radii[1]*1e3,system.radii[1]*1e3 + 1.3e6,10000)
-temp, pres, dens = [], [], []
-for ri in r:
-    temp.append(temperature(ri))
-    pres.append(pressure(ri))
-    dens.append(density(ri))
-
-fig, axs = plt.subplots(1,3)
-
-axs[0].semilogy(r, temp)
-axs[1].semilogy(r, pres)
-axs[2].semilogy(r, dens)
-plt.show()
+altitude = 0.8e5
+N = 10**4
+plot_temp_density(altitude, N)
