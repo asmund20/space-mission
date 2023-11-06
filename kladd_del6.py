@@ -95,7 +95,7 @@ def verify_not_in_atmosphere(landing_sequence):
     landing_sequence.fall(fall_time)
 
 
-def main():
+def look_for_landingspot():
     landing_sequence, planet_positions = initiate_circular_orbit()
     t, p, v = landing_sequence.orient()
     landing_sequence.fall(100)
@@ -138,5 +138,6 @@ def main():
 
 
 if __name__=="__main__":
-    main()
+    look_for_landingspot()
     ...
+
