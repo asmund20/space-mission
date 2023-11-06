@@ -33,7 +33,6 @@ gasses = {
 }
 
 
-
 @jit(nopython=True)
 def chi_sqr(f, lmbda, lmbda0, sigma, doppler, temp, F_min, m):
     std = (lmbda0/cs.c)*np.sqrt(cs.k_B*temp/m)
