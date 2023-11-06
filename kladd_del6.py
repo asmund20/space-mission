@@ -137,7 +137,6 @@ def main():
     print(f"Landing site coordinates: r = planet_radius, theta = 0, phi = {np.angle(complex(landing_pos_discovery_pos[0], landing_pos_discovery_pos[1]))/np.pi} pi, t = {landing_pos_discovery_time}")
 
 
-
 if __name__=="__main__":
     main()
     ...
