@@ -1,3 +1,7 @@
+########################
+#  IKKE BRUKT KODEMAL  #
+########################
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import chi2
@@ -6,8 +10,6 @@ import ast2000tools.utils as ut
 from ast2000tools.solar_system import SolarSystem
 from ast2000tools.space_mission import SpaceMission
 from ast2000tools.shortcuts import SpaceMissionShortcuts
-from reference_frame import sim_launch
-from del5 import plan_trajectory
 from numba import jit
 import tqdm
 import copy
@@ -20,12 +22,15 @@ np.random.seed(seed)
 
 vmax_c = 1e4/cs.c
 
+# The chemical formula of the gasses assosiated with the
+# different lmbda0 values.
 spectral_lines = {
     632: 'O2', 690: 'O2', 760: 'O2', 720: 'H2O',
     820: 'H2O', 940: 'H2O', 1400: 'CO2', 1600: 'CO2',
     1660: 'CH4', 2200: 'CH4', 2340: 'CO', 2870: 'N2O'
 }
 
+# Information about the gasses.
 gasses = {
     'O2': {'name': 'Oxygen', 'A': 32}, 'H2O': {'name': 'Water vapor', 'A': 18},
     'CO2': {'name': 'Carbon dioxide', 'A': 44}, 'CH4': {'name': 'Methane', 'A': 16},
@@ -35,10 +40,12 @@ gasses = {
 
 @jit(nopython=True)
 def chi_sqr(f, lmbda, lmbda0, sigma, doppler, temp, F_min, m):
+    """Calculates chi^2 value for a given set of parameters"""
+    # Std of the Gaussian curve of the spectral line
     std = (lmbda0/cs.c)*np.sqrt(cs.k_B*temp/m)
+    # Model of the spectral line F(lambda)
     F = 1 + (F_min-1)*np.exp(-((lmbda+doppler-lmbda0)**2)/(2*std**2))
-    
-    df = len(F)
+    # Chi^2
     chi_squared = np.sum(((f-F)/sigma)**2)
     
     return chi_squared
@@ -47,36 +54,47 @@ def chi_sqr(f, lmbda, lmbda0, sigma, doppler, temp, F_min, m):
 
 @jit(nopython=True)
 def chi_squared_test(lmbda, lmbda0, idx_lmb0, flux, sigma, m):
-
+    """Performs chi^2-test on the three different parameters doppler, temp and F_min."""
     N = int(lmbda0*vmax_c/dlmbda)
 
     chi_values = []
     param = []
+    # Doppler shift (delta lambda)
     for doppler in np.linspace(-vmax_c*lmbda0, vmax_c*lmbda0,100):
+        # Temperature
         for temp in range(150,451,5):
+            # Bottom of spectral line
             for F_min in np.linspace(0.6, 1.0, 100):
+                # Chi^2 value with this combination of parameters
                 chisqr = chi_sqr(
                     flux[idx_lmb0-N:idx_lmb0+N], lmbda[idx_lmb0-N:idx_lmb0+N],
                     lmbda0, sigma[idx_lmb0-N:idx_lmb0+N], doppler, temp, F_min, m
                 )
                 chi_values.append(chisqr)
                 param.append([doppler, temp, F_min])
+                
     return chi_values, param
 
 
 
 def atmosphere_chem_comp(lmbda, flux, sigma):
+    """Performs chi^2-test and identifies the set of parameters that minimizes chi^2
+        for each of the spectral lines lmbda0."""
     
     print('Finner parametre ved chi^2-test:')
     parameters = []
     for lmbda0 in tqdm.tqdm(spectral_lines.keys()):
+        # Chemical formula
         gas = spectral_lines[lmbda0]
         gas_info = gasses[gas]
+        # Particle mass m
         m = gas_info['A']*cs.m_p
+        # Index of lmbda0
         i = np.argmin(abs(lmbda-lmbda0))
         chi_values, param = chi_squared_test(lmbda, lmbda0, i, flux, sigma, m)
-        i_min = np.argmin(chi_values)
         
+        # Index of minimal chi^2
+        i_min = np.argmin(chi_values)
         parameters.append(param[i_min])
 
     return parameters
@@ -84,6 +102,8 @@ def atmosphere_chem_comp(lmbda, flux, sigma):
 
 
 def plot_model_over_data(flux, lmbda, dlmbda, parameters):
+    """Plots model F(lambda) over the measured flux for each of the 
+        twelve different spectral lines, and prints parameters in a table."""
     print('*'*90)
     print('| Gas                    | lambda0  [nm]  | dlambda [nm]  | Temperature [K]  | F_min     |')
     print('*'*90)
@@ -92,7 +112,7 @@ def plot_model_over_data(flux, lmbda, dlmbda, parameters):
     fig, axs = plt.subplots(nrows=3, ncols=4)
     ymin, ymax = 0.5, 1.5
     for lmbda0 in spectral_lines.keys():
-    
+        # Index of lmbda0
         i = np.argmin(abs(lmbda-lmbda0))
         N = int(lmbda0*vmax_c/dlmbda)
 
@@ -103,9 +123,12 @@ def plot_model_over_data(flux, lmbda, dlmbda, parameters):
         name = gas_info['name']
     
         print(f'| {name:<16} ({gas:<3}) | {lmbda0:<15.2f}| {doppler:<14.5f}| {temp:<17}| {F_min:<10.5f}|')
-    
+        
+        # Std of Gaussian curve of the spectral line
         std = (lmbda0/cs.c)*np.sqrt(cs.k_B*temp/m)
+        # Model F(lambda)
         F = 1 +(F_min-1)*np.exp(-((lmbda[i-N:i+N]+doppler-lmbda0)**2)/(2*std**2))
+        # Plot F(lambda) over flux
         axs[j//4, j%4].set_ylim(ymin, ymax)
         axs[j//4, j%4].plot(lmbda[i-N:i+N], flux[i-N:i+N])
         axs[j//4, j%4].plot(lmbda[i-N:i+N], F, color='red', label=f'{gas}: {lmbda0}nm')
@@ -123,6 +146,7 @@ def plot_model_over_data(flux, lmbda, dlmbda, parameters):
 
 
 def plot_sigma(sigma, lmbda, dlmbda):
+    """Plots the sigma values for the noise"""
     fig, axs = plt.subplots(nrows=3, ncols=4)
     ymin, ymax = min(sigma), max(sigma)
     j = 0
@@ -145,11 +169,18 @@ def plot_sigma(sigma, lmbda, dlmbda):
 
 
 def temperature(r):
+    """Temperature as a function of distance from center r"""
+    # Mean molecular mass
     mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    # Temperature on surface
     T0 = 271
+    # Density on surface
     rho0 = system.atmospheric_densities[1]
+    # Radius of Tvekne
     r0 = system.radii[1]*1e3
+    # Mass of Tvekne
     M_T = system.masses[1]*cs.m_sun
+    # Gamma vlue for adiabatic gas
     gamma = 1.4
 
     frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
@@ -163,13 +194,21 @@ def temperature(r):
     return T
 
 def pressure(r):
+    """Pressure as a function of distance from center r"""
+    # Mean molecular mass
     mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    # Temperature on surface
     T0 = 271
+    # Density on surface
     rho0 = system.atmospheric_densities[1]
+    # Radius of Tvekne
     r0 = system.radii[1]*1e3
-    p0 = rho0*cs.k_B*T0/mu
+    # Mass of Tvekne
     M_T = system.masses[1]*cs.m_sun
+    # Gamma vlue for adiabatic gas
     gamma = 1.4
+    # Pressure at surface level
+    p0 = rho0*cs.k_B*T0/mu
     
     frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
     r_iso = r0 / (1 - frac)
@@ -183,11 +222,14 @@ def pressure(r):
     return p
 
 def density(r):
+    """Density as a function of distance from center r"""
+    # Mean molecular mass
     mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
     return pressure(r)*mu/cs.k_B/temperature(r)
     
 
 def plot_temp_density(altitude, N):
+    """Plots T(r) and rho(r) from surface to altitude with N datapoints."""
     r0 = system.radii[1]*1e3
     r = np.linspace(r0, r0+altitude, N)
     temp, dens = np.zeros(N), np.zeros(N)
@@ -205,6 +247,7 @@ def plot_temp_density(altitude, N):
     
     fig, axs = plt.subplots(2, sharex=True)
     
+    # Plots temperature
     axs[0].set_xlim(r[0]/1e3,r[-1]/1e3)
     axs[0].set_ylim(0,280)
     axs[0].set_ylabel('Temperatur [K]', fontsize=12)
@@ -213,6 +256,7 @@ def plot_temp_density(altitude, N):
     axs[0].grid(visible=True)
     axs[0].legend(fontsize=14)
 
+    # Plots density (logarithmic)
     axs[1].set_xlim(r[0]/1e3,r[-1]/1e3)
     axs[1].set_xlabel('Avstand $r$ fra sentrum av Tvekne [km]', fontsize=12)
     axs[1].set_ylabel('Tetthet [kg/m^3]', fontsize=12)
@@ -243,15 +287,13 @@ def initiate_circular_orbit():
 
     star_mass = system.star_mass
     planet_masses = system.masses
-
-    time_start_launch, phi0, travel_duration, endpoint = plan_trajectory()
-    rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
-    fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
-
-    # Verify launch
-    mission.set_launch_parameters(thrust, fuel_consumption, fuel, ut.yr_to_s(launch_duration), rocket_positions_during_launch[0], time_start_launch)
+    
+    # Verify launch: here we use the parameters as before just printed out in
+    # the terminal and pasted in here to save time and avoid needing to upload the same
+    # .py-files as before.
+    mission.set_launch_parameters(5109888.470669283, 946.9636, 299999.99999834, 307.6, [-3.52242556, -0.06816988], 23.195500000000003)
     mission.launch_rocket()
-    mission.verify_launch_result(rocket_positions_during_launch[-1])
+    mission.verify_launch_result([-3.52243009, -0.06822316])
 
     ### SHORTCUT ###
     sc_position, sc_velocity, sc_motion_angle = shortcut.get_orientation_data()
@@ -340,14 +382,20 @@ def look_for_landingspot():
 
 look_for_landingspot()
 
-lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
-sigma = np.load("sigma_noise.npy")[:,1]
+try:
+    lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
+    sigma = np.load("sigma_noise.npy")[:,1]
+except FileNotFoundError:
+    data = np.genfromtxt('spectrum_seed29_600nm_3000nm.txt')
+    lmbda, flux = data[:,0], data[:,1]
+    sigma = np.genfromtxt('sigma_noise.txt')
+
 dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
 
 parameters = atmosphere_chem_comp(lmbda, flux, sigma)
 plot_model_over_data(flux, lmbda, dlmbda, parameters)
 plot_sigma(sigma, lmbda, dlmbda)
 
-altitude = 0.8e5
+altitude = 8e4
 N = 10**4
 plot_temp_density(altitude, N)
