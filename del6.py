@@ -194,34 +194,37 @@ def plot_temp_density(altitude, N):
     mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
     M_T = system.masses[1]*cs.m_sun
     frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
-    r_iso = r0 / (1 - frac)
+    r_iso = r0/(1 - frac)/1e3
     
     fig, axs = plt.subplots(2, sharex=True)
     
-    axs[0].set_xlim(r[0],r[-1])
+    axs[0].set_xlim(r[0]/1e3,r[-1]/1e3)
     axs[0].set_ylim(0,280)
-    axs[0].plot(r, temp, label='$T(r)$')
+    axs[0].set_ylabel('Temperatur [K]', fontsize=12)
+    axs[0].plot(r/1e3, temp, label='$T(r)$')
     axs[0].plot([r_iso, r_iso],[0,T0], linestyle='--', color='black', label='$r_{iso}$')
     axs[0].grid(visible=True)
-    axs[0].legend(fontsize=12)
+    axs[0].legend(fontsize=14)
 
-    axs[1].set_xlim(r[0],r[-1])
-    axs[1].plot(r, dens, color='red', label='$\\varrho (r)$')
+    axs[1].set_xlim(r[0]/1e3,r[-1]/1e3)
+    axs[1].set_xlabel('Avstand $r$ fra sentrum av Tvekne [km]', fontsize=12)
+    axs[1].set_ylabel('Tetthet [kg/m^3]', fontsize=12)
+    axs[1].semilogy(r/1e3, dens, color='red', label='$\\varrho (r)$')
     axs[1].plot([r_iso, r_iso],[0,dens[0]], linestyle='--', color='black', label='$r_{iso}$')
     axs[1].grid(visible=True)
-    axs[1].legend(fontsize=12)
+    axs[1].legend(fontsize=14)
     
     plt.show()
     
 
-# lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
-# sigma = np.load("sigma_noise.npy")[:,1]
-# dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
+lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
+sigma = np.load("sigma_noise.npy")[:,1]
+dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
 
-#parameters = atmosphere_chem_comp(lmbda, flux, sigma)
-#plot_model_over_data(flux, lmbda, dlmbda, parameters)
-# plot_sigma(sigma, lmbda, dlmbda)
+parameters = atmosphere_chem_comp(lmbda, flux, sigma)
+plot_model_over_data(flux, lmbda, dlmbda, parameters)
+plot_sigma(sigma, lmbda, dlmbda)
 
 altitude = 0.8e5
 N = 10**4
-plot_temp_density(altitude, N)
+# plot_temp_density(altitude, N)
