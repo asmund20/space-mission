@@ -202,22 +202,25 @@ def plot_temp_density(altitude, N):
     mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
     M_T = system.masses[1]*cs.m_sun
     frac = r0*T0*gamma*cs.k_B/(2*(gamma-1)*mu*cs.G*M_T)
-    r_iso = r0 / (1 - frac)
+    r_iso = r0/(1 - frac)/1e3
     
     fig, axs = plt.subplots(2, sharex=True)
     
-    axs[0].set_xlim(r[0],r[-1])
+    axs[0].set_xlim(r[0]/1e3,r[-1]/1e3)
     axs[0].set_ylim(0,280)
-    axs[0].plot(r, temp, label='$T(r)$')
+    axs[0].set_ylabel('Temperatur [K]', fontsize=12)
+    axs[0].plot(r/1e3, temp, label='$T(r)$')
     axs[0].plot([r_iso, r_iso],[0,T0], linestyle='--', color='black', label='$r_{iso}$')
     axs[0].grid(visible=True)
-    axs[0].legend(fontsize=12)
+    axs[0].legend(fontsize=14)
 
-    axs[1].set_xlim(r[0],r[-1])
-    axs[1].plot(r, dens, color='red', label='$\\varrho (r)$')
+    axs[1].set_xlim(r[0]/1e3,r[-1]/1e3)
+    axs[1].set_xlabel('Avstand $r$ fra sentrum av Tvekne [km]', fontsize=12)
+    axs[1].set_ylabel('Tetthet [kg/m^3]', fontsize=12)
+    axs[1].semilogy(r/1e3, dens, color='red', label='$\\varrho (r)$')
     axs[1].plot([r_iso, r_iso],[0,dens[0]], linestyle='--', color='black', label='$r_{iso}$')
     axs[1].grid(visible=True)
-    axs[1].legend(fontsize=12)
+    axs[1].legend(fontsize=14)
     
     plt.show()
 
@@ -242,9 +245,6 @@ def initiate_circular_orbit():
     star_mass = system.star_mass
     planet_masses = system.masses
 
-    timesteps_planets = len(pos_planets[0,0])
-    known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
-
     time_start_launch, phi0, travel_duration, endpoint = plan_trajectory()
     rocket_positions_during_launch, rocket_velocity_after_launch, _, _ = sim_launch(time_start_launch, phi0)
     fuel_consumption, thrust, fuel = np.load('rocket_specs.npy')
@@ -258,6 +258,7 @@ def initiate_circular_orbit():
     sc_position, sc_velocity, sc_motion_angle = shortcut.get_orientation_data()
     mission.verify_manual_orientation(sc_position, sc_velocity, sc_motion_angle)
 
+    # opproximately where we would have reached the planet if we managed to do it ourselves
     time = 25.4123
     planet_idx = 1
 
@@ -286,7 +287,7 @@ def initiate_circular_orbit():
     return land, pos_planets
 
 
-# calculates the spherical coordinate for a point on Tvekne's surface.
+# calculates the spherical coordinate for a point on Tvekne's surface after a time.
 # takes the current position (theta, phi) and the time after which to return the position.
 # returns: theta, phi
 def landing_site_position(theta, phi, time):
@@ -294,26 +295,17 @@ def landing_site_position(theta, phi, time):
     return theta, phi+time*omega
 
 
-def verify_not_in_atmosphere(landing_sequence):
-    fall_time = 1e7
-
-    landing_sequence = copy.deepcopy(landing_sequence)
-
-    landing_sequence.fall(fall_time)
-
-
 def look_for_landingspot():
     landing_sequence, planet_positions = initiate_circular_orbit()
-    t, p, v = landing_sequence.orient()
     landing_sequence.fall(100)
-    t, p, v = landing_sequence.orient()
+    _, _, v = landing_sequence.orient()
 
-    # slowing down in order to get an orbit that is as close to the planet
-    # as possible without entering the atmosphere
-    #landing_sequence.boost(-0.7268468*v)
+    # slowing down so that the spacecraft will get closer to the planet
     landing_sequence.boost(-0.8*v)
 
+    # time-step in which we check if the spacecrft is closer than the desired distance
     dt = 100
+    # the distance we want to the surface of the planet
     desired_h = 1e6 #m
     desired_r = system.radii[1]*1e3+desired_h
 
@@ -328,11 +320,13 @@ def look_for_landingspot():
     e_theta = np.array([-p[1]/np.linalg.norm(p), p[0]/np.linalg.norm(p), 0])
     dv_inj = e_theta*v_stable - v
 
+    # making sure that te direction of travel stays the same, for relism-purposes
     if np.linalg.norm(dv_inj) > np.linalg.norm(v):
         dv_inj = -e_theta*v_stable-v
 
     landing_sequence.boost(dv_inj)
 
+    # the amount of time we found it takes before the spacecraft is above a nice spot to land
     landing_sequence.fall(250)
     landing_sequence.look_in_direction_of_planet(1)
     landing_sequence.take_picture("landing_site.xml")
@@ -357,3 +351,4 @@ plot_sigma(sigma, lmbda, dlmbda)
 
 altitude = 0.8e5
 N = 10**4
+plot_temp_density(altitude, N)
