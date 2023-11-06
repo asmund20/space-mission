@@ -386,9 +386,9 @@ try:
     lmbda, flux = np.load("spectrum_644nm_3000nm.npy")[:,0], np.load("spectrum_644nm_3000nm.npy")[:,1]
     sigma = np.load("sigma_noise.npy")[:,1]
 except FileNotFoundError:
-    data = np.genfromtxt('spectrum_seed29_600nm_3000nm.txt')
+    data = np.genfromtxt('spectrum_seed29_600nm_3000nm.txt', dtype='float')
     lmbda, flux = data[:,0], data[:,1]
-    sigma = np.genfromtxt('sigma_noise.txt')
+    sigma = np.genfromtxt('sigma_noise.txt', dtype='float')[:,1]
 
 dlmbda = (lmbda[-1]-lmbda[0])/len(lmbda)
 
