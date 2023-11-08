@@ -272,12 +272,12 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
     return np.array(times), np.array(positions), np.array(velocities), d, np.array(accelerations)
 
-def trial_and_error(wait_time, boost, angle):
+def trial_and_error(landing_sequence, wait_time, boost, angle):
     radius = system.radii[1]*1e3
     desired_landing_spot = np.array([radius, 0, 0.44028 * np.pi, 163850])
     A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
-    t, position, velocity, drag_force, acceleration = simulate_landing(initiate_orbit(), 1000, A, wait_time, boost, angle)
+    t, position, velocity, drag_force, acceleration = simulate_landing(landing_sequence, 1000, A, wait_time, boost, angle)
 
     landing_site_position(desired_landing_spot, t[-1]-t[0])
 
@@ -334,6 +334,7 @@ def plotting(t, position, velocity, drag_force, acceleration, desired_landing_ph
     plt.show()
 
 if __name__ == "__main__":
+    landing_sequence = initiate_orbit()
     ...
-    trial_and_error(1303.45, 500, np.pi/2)
+    trial_and_error(copy.deepcopy(landing_sequence), 1303.45, 500, np.pi/2)
 
