@@ -13,6 +13,7 @@ from ast2000tools.shortcuts import SpaceMissionShortcuts
 from numba import jit
 import tqdm
 import copy
+import sys
 
 seed = 59529
 system = SolarSystem(seed)
@@ -219,60 +220,101 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
     w = lambda r: np.cross(np.array([0, 0, 1/system.rotational_periods[1]/(60**2*24)]), r)
 
-    distances = [np.linalg.norm(pos)]
-    speeds = [np.linalg.norm(v)]
     positions = [pos.copy()]
     velocities = [v.copy()]
     times = [t]
+    accelerations = [np.array([0, 0, 0])]
     d = [0]
 
     dt = 0.1
     deployed_parachute = False
+    final_dt = False
     #deployed_parachute = True
 
+    count = 0
+
     print("starting integration")
-    while np.linalg.norm(pos) > system.radii[1]*1e3:
+    while np.linalg.norm(pos) > system.radii[1]*1e3 and count < 1e6:
 
         if np.linalg.norm(pos)-system.radii[1]*1e3 <= deploy_parachute and not deployed_parachute:
             area = max(area, parachute_area)
-            print(f"Deployed parachute at t: {t}, h: {np.linalg.norm(pos)-system.radii[1]*1e3}, v: {v}")
+            print(f"Deployed parachute at t: {t}, h: {np.linalg.norm(pos)-system.radii[1]*1e3}, v: {np.linalg.norm(v)}")
             deployed_parachute = True
+            dt = 1e-4
 
-        a = g(pos) + drag(pos, v-w(pos), density(np.linalg.norm(pos)), area)/mission.lander_mass
+        if deployed_parachute and not final_dt:
+            count += 1
+            #print(distances[-1]-system.radii[1]*1e3, end=",")
+
+        if count and count > 1e4 and not final_dt:
+            dt = 1e-2
+            final_dt = True
+
+        current_drag = drag(pos, v-w(pos), density(np.linalg.norm(pos)), area)
+        
+        if np.linalg.norm(current_drag) > 2.5e5 and deployed_parachute:
+            raise RuntimeError(f"Parachute broke due to too high of a force of {np.linalg.norm(current_drag)/2.5e5:.6f} times its capacity")
+
+        a = g(pos) + current_drag/mission.lander_mass
         d.append(np.linalg.norm(drag(pos, v-w(pos), density(np.linalg.norm(pos)), parachute_area)))
 
         v += a*dt
         pos += v*dt
         t += dt
 
-        distances.append(np.linalg.norm(pos))
-        speeds.append(np.linalg.norm(v))
         positions.append(pos.copy())
         velocities.append(v.copy())
+        accelerations.append(a.copy())
         times.append(t)
 
-    return np.array(times), np.array(distances), np.array(positions), np.array(speeds), np.array(velocities), d
+    return np.array(times), np.array(positions), np.array(velocities), d, np.array(accelerations)
 
-r = system.radii[1]*1e3
-A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(r)/r**2/3**2
-#A = 10
-
-t, r, p, s, v, d = simulate_landing(initiate_orbit(), 1000, A, 0, 500, np.pi/2)
-print("parachute_area: ", A)
-
-#def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiate_at, initiation_boost, initiation_boost_direction):
-
-plt.plot(t, r-system.radii[1]*1e3)
-plt.figure()
-plt.plot(t, s)
-#plt.plot(p[:,0], p[:,1])
-plt.figure()
-plt.plot(p[:,0], p[:,1])
-angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
-plt.plot(system.radii[1]*1e3*np.cos(angle), system.radii[1]*1e3*np.sin(angle))
-plt.axis("equal")
-plt.figure()
-plt.plot(t, d)
+def trial_and_error():
+    radius = system.radii[1]*1e3
+    desired_landing_spot = (0)
+    A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
+    A = 104
+    t, position, velocity, drag_force, acceleration = simulate_landing(initiate_orbit(), 1000, A, 0, 500, np.pi/2)
+    final_radial_velocity = np.dot(position[-1], velocity)/np.linalg.norm(position[-1])
 
 
-plt.show()
+def plotting(t, position, velocity, drag_force, acceleration):
+    print("parachute_area: ", A)
+    print("Final speed:", np.linalg.norm(velocity[-1]))
+    print("Final acceleration:", acceleration[-1]) 
+
+    #def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiate_at, initiation_boost, initiation_boost_direction):
+
+    plt.plot(t, np.linalg.norm(position, axis=1)/1e3-radius/1e3)
+    plt.title("Distance from the surface of Tvekne")
+    plt.xlabel("time [s]")
+    plt.ylabel("height [km]")
+
+    plt.figure()
+    plt.plot(t, np.linalg.norm(velocity, axis=1))
+    plt.title("Lander speed")
+    plt.xlabel("time [s]")
+    plt.ylabel("speed [m/s]")
+
+    plt.figure()
+    plt.plot(position[:,0]/1e3, position[:,1]/1e3, label="Lander", color="orange")
+    angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
+    plt.fill(radius/1e3*np.cos(angle),radius/1e3*np.sin(angle), color="blue", label="Tvekne")
+    plt.axis("equal")
+    plt.title("The landers trajectory and Tvekne")
+    plt.xlabel("x [km]")
+    plt.ylabel("y [km]")
+    plt.legend()
+
+    plt.figure()
+    plt.plot(t, np.linalg.norm(acceleration, axis=1))
+    plt.title("lander acceleration")
+    plt.xlabel("time [s]")
+    plt.ylabel("acceleration [m/s²]")
+
+    plt.show()
+
+if __name__ == "__main__":
+    ...
+    plotting()
+
