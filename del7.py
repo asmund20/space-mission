@@ -359,7 +359,7 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
         time.append(t)
     
     t, pos, v = landing_sequence.orient()
-    para_height = np.linalg.norm(pos)-system.radii[1]*1e3
+    parachute_deployment_height = np.linalg.norm(pos)-system.radii[1]*1e3
     landing_sequence.deploy_parachute()
 
     dt = 1
@@ -390,9 +390,12 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
 #     plt.legend()
     
     
-    print(para_height)
+    print(parachute_deployment_height)
+    print("Final radial velocity:", np.dot(velocities[-2], positions[-2])/np.linalg.norm(positions[-2]), "m/s")
 
 if __name__ == "__main__":
+    wait_time = 5676.98
+    boost = -1000
     landing_sequence = initiate_orbit()
-    trial_and_error(copy.deepcopy(landing_sequence), 5640, -1000)
-    # land4real(landing_sequence, 5640, -1000, 86.13)
+    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
+    land4real(landing_sequence, wait_time, boost, 86.13, 0)
