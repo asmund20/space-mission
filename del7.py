@@ -165,6 +165,13 @@ def landing_site_position(theta, phi, time):
     return theta, phi+time*omega
 
 
+#landing_site is [r, theta, phi, t]
+def landing_site_position(landing_site, dt):
+    omega = 1/system.rotational_periods[1]/60**2/24
+    landing_site[2] = landing_site[2] + dt*omega
+    landing_site[3] = landing_site[3] + dt
+
+
 def initiate_orbit():
     landing_sequence, planet_positions = initiate_circular_orbit()
     landing_sequence.fall(100)
@@ -207,9 +214,6 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
     t, pos, v = landing_sequence.orient()
 
     initiation_boost_angle = np.angle(complex(pos[0], pos[1]))
-    print(v)
-    print(initiation_boost * np.array([np.cos(initiation_boost_angle), np.sin(initiation_boost_angle), 0]))
-    print(pos)
     v += initiation_boost * np.array([np.cos(initiation_boost_angle), np.sin(initiation_boost_angle), 0])
 
     area = mission.lander_area
@@ -244,7 +248,6 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
         if deployed_parachute and not final_dt:
             count += 1
-            #print(distances[-1]-system.radii[1]*1e3, end=",")
 
         if count and count > 1e4 and not final_dt:
             dt = 1e-2
@@ -269,34 +272,56 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
     return np.array(times), np.array(positions), np.array(velocities), d, np.array(accelerations)
 
-def trial_and_error():
+def trial_and_error(wait_time, boost, angle):
     radius = system.radii[1]*1e3
-    desired_landing_spot = (0)
+    desired_landing_spot = np.array([radius, 0, 0.44028 * np.pi, 163850])
     A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
-    A = 104
-    t, position, velocity, drag_force, acceleration = simulate_landing(initiate_orbit(), 1000, A, 0, 500, np.pi/2)
-    final_radial_velocity = np.dot(position[-1], velocity)/np.linalg.norm(position[-1])
+
+    t, position, velocity, drag_force, acceleration = simulate_landing(initiate_orbit(), 1000, A, wait_time, boost, angle)
+
+    landing_site_position(desired_landing_spot, t[-1]-t[0])
+
+    final_radial_velocity = np.dot(position[-1], velocity[-1])/np.linalg.norm(position[-1])
+    landing_site_angle = np.angle(complex(position[-1,0], position[-1,1]))
+    diff_angle = desired_landing_spot[2]-landing_site_angle
+    missed_with = radius*diff_angle
+
+    print("Missed desired landing spot with", missed_with/1e3, "km")
+    
+    print(final_radial_velocity)
+    #plotting(t, position, velocity, drag_force, acceleration, desired_landing_spot[2])
 
 
-def plotting(t, position, velocity, drag_force, acceleration):
+def plotting(t, position, velocity, drag_force, acceleration, desired_landing_phi):
+    radius = system.radii[1]*1e3
+    A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
+
     print("parachute_area: ", A)
-    print("Final speed:", np.linalg.norm(velocity[-1]))
     print("Final acceleration:", acceleration[-1]) 
 
-    #def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiate_at, initiation_boost, initiation_boost_direction):
-
+    # height-plot
     plt.plot(t, np.linalg.norm(position, axis=1)/1e3-radius/1e3)
     plt.title("Distance from the surface of Tvekne")
     plt.xlabel("time [s]")
     plt.ylabel("height [km]")
 
+    # speed-plot
     plt.figure()
     plt.plot(t, np.linalg.norm(velocity, axis=1))
     plt.title("Lander speed")
     plt.xlabel("time [s]")
     plt.ylabel("speed [m/s]")
 
+    #acceleration-plot
     plt.figure()
+    plt.plot(t, np.linalg.norm(acceleration, axis=1))
+    plt.title("lander acceleration")
+    plt.xlabel("time [s]")
+    plt.ylabel("acceleration [m/s²]")
+
+    # position-plot
+    plt.figure()
+    plt.scatter(radius/1e3*np.cos(desired_landing_phi), radius/1e3*np.sin(desired_landing_phi), label="desired landing-spot", color="green")
     plt.plot(position[:,0]/1e3, position[:,1]/1e3, label="Lander", color="orange")
     angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
     plt.fill(radius/1e3*np.cos(angle),radius/1e3*np.sin(angle), color="blue", label="Tvekne")
@@ -306,15 +331,9 @@ def plotting(t, position, velocity, drag_force, acceleration):
     plt.ylabel("y [km]")
     plt.legend()
 
-    plt.figure()
-    plt.plot(t, np.linalg.norm(acceleration, axis=1))
-    plt.title("lander acceleration")
-    plt.xlabel("time [s]")
-    plt.ylabel("acceleration [m/s²]")
-
     plt.show()
 
 if __name__ == "__main__":
     ...
-    plotting()
+    trial_and_error(1303.45, 500, np.pi/2)
 
