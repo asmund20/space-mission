@@ -20,28 +20,10 @@ system = SolarSystem(seed)
 mission = SpaceMission(seed)
 np.random.seed(seed)
 
-vmax_c = 1e4/cs.c
-
-# The chemical formula of the gasses assosiated with the
-# different lmbda0 values.
-spectral_lines = {
-    632: 'O2', 690: 'O2', 760: 'O2', 720: 'H2O',
-    820: 'H2O', 940: 'H2O', 1400: 'CO2', 1600: 'CO2',
-    1660: 'CH4', 2200: 'CH4', 2340: 'CO', 2870: 'N2O'
-}
-
-# Information about the gasses.
-gasses = {
-    'O2': {'name': 'Oxygen', 'A': 32}, 'H2O': {'name': 'Water vapor', 'A': 18},
-    'CO2': {'name': 'Carbon dioxide', 'A': 44}, 'CH4': {'name': 'Methane', 'A': 16},
-    'CO': {'name': 'Carbon monoxide', 'A': 28}, 'N2O': {'name': 'Nitrous dioxide', 'A': 44}
-}
-
-
 def temperature(r):
     """Temperature as a function of distance from center r"""
     # Mean molecular mass
-    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    mu = 22*cs.m_p
     # Temperature on surface
     T0 = 271
     # Density on surface
@@ -66,7 +48,7 @@ def temperature(r):
 def pressure(r):
     """Pressure as a function of distance from center r"""
     # Mean molecular mass
-    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    mu = 22*cs.m_p
     # Temperature on surface
     T0 = 271
     # Density on surface
@@ -94,7 +76,7 @@ def pressure(r):
 def density(r):
     """Density as a function of distance from center r"""
     # Mean molecular mass
-    mu = (gasses['CO']['A']+gasses['CH4']['A'])*cs.m_p/2
+    mu = 22*cs.m_p
     return pressure(r)*mu/cs.k_B/temperature(r)
     
 def initiate_circular_orbit():
@@ -329,7 +311,21 @@ def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi):
     plt.ylabel("y [km]")
     plt.legend()
 
-def plot_landing(t, pos, vel, v_r, v_t, a_r, alpha, phi_planned):
+def plot_landing(time, positions, velocities, phi_planned):
+    radial_velocities = []
+    for pos, vel in zip(positions, velocities):
+        radial_velocities.append(np.dot(pos,vel)*pos/np.linalg.norm(pos)**2)
+    radial_velocities = np.array(radial_velocities)
+    v_r = np.linalg.norm(radial_velocities, axis=1)
+    
+    tangential_velocities = velocities - radial_velocities
+    v_t = np.linalg.norm(tangential_velocities, axis=1)
+    
+    angular_velocities = v_t/np.linalg.norm(positions, axis=1)
+    accelerations = np.linalg.norm((velocities[1:]-velocities[:-1]), axis=1)/(time[1:]-time[:-1])
+    radial_accelerations = (v_r[1:]-v_r[:-1])/(time[1:]-time[:-1])
+    angular_accelerations = (angular_velocities[1:]-angular_velocities[:-1])/(time[1:]-time[:-1])
+    ...
     
 
 
@@ -374,35 +370,25 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     velocities = np.array(velocities)
     time = np.array(time)
 
-    radial_velocities = []
-    for pos, vel in zip(positions, velocities):
-        radial_velocities.append(np.dot(pos,vel)*pos/np.linalg.norm(pos)**2)
-    radial_velocities = np.array(radial_velocities)
-    v_r = np.linalg.norm(radial_velocities, axis=1)
     
-    tangential_velocities = velocities - radial_velocities
-    v_t = np.linalg.norm(tangential_velocities, axis=1)
-    
-    angular_velocities = v_t/np.linalg.norm(positions, axis=1)
-    accelerations = np.linalg.norm((velocities[1:]-velocities[:-1]), axis=1)/(time[1:]-time[:-1])
-    radial_accelerations = (v_r[1:]-v_r[:-1])/(time[1:]-time[:-1])
-    angular_accelerations = (angular_velocities[1:]-angular_velocities[:-1])/(time[1:]-time[:-1])
-    landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
-    
+
+    plot_landing(
+        time, positions, velocities, desired_landing_spot[2] 
+    )
     desired_landing_spot = landing_site_position(desired_landing_spot, time[-1])
+    landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
     diff_angle = desired_landing_spot[2]-landing_site_phi
     missed_with = system.radii[1]*1e3*diff_angle
 
-    plot_landing(
-        time, positions, v_r, v_t, radial_accelerations,
-        angular_accelerations, desired_landing_spot[2] 
-    )
+    print("Deployed parachute at", parachute_deployment_height, "m above the surface")
+    print("Missed desired landing-spot with", missed_with, "km")
+
 if __name__ == "__main__":
     wait_time = 5676.98
     boost = -1000
     desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
     landing_sequence = initiate_orbit()
-    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
-    land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
+    trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
+    #land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
 
     plt.show()
