@@ -369,44 +369,19 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area):
     positions = np.array(positions)
     velocities = np.array(velocities)
     time = np.array(time)
-    radial_velocities = np.tensordot(positions, velocities, axis=1)/np.linalg.norm(positions, axes=1)
+
+    radial_velocities = []
+    for pos, vel in zip(positions, velocities):
+        radial_velocities.append(np.dot(pos,vel)/np.linalg.norm(pos))
+    radial_velodities = np.array(radial_velocities)
+    
     tangential_velocities = velocities-radial_velocities
     angular_velocities = tangential_velocities/np.linalg.norm(positions, axis=1)
     accelerations = np.linalg.norm((velocities[1:]-velocities[:-1]), axis=1)/(time[1:]-time[:-1])
     radial_accelerations = np.linalg.norm((radial_velocities[1:]-radial_velocities[:-1]), axis=1)/(time[1:]-time[:-1])
     angular_accelerations = np.linalg.norm((angular_velocities[1:]-angular_velocities[:-1]), axis=1)/(time[1:]-time[:-1])
-    
-    landing_sequence.finish_video(radial_camera_offset=2e4)
-    
-    radius = system.radii[1]*1e3
-    desired_landing_spot = np.array([radius, np.pi/2, 0.44028 * np.pi, 163850])
-    landing_site_position(desired_landing_spot, time[-1])
     landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
     diff_angle = desired_landing_spot[2]-landing_site_phi
     missed_with = radius*diff_angle
 
     plotting(time[:-1], positions[:-1], velocities[:-1], accelerations, desired_landing_spot[2])
-    plt.figure()
-    plt.plot(time[:-1], angular_accelerations)
-    plt.title("Angular acceleration")
-    plt.xlabel("t [s]")
-    plt.ylabel("angular acceleration [s⁻¹]")
-
-    plt.figure()
-    plt.plot(time[:-1], radial_accelerations)
-    plt.title("Radial acceleration")
-    plt.xlabel("t [s]")
-    plt.ylabel("acceleration [m/s]")
-
-    print("Missed desired landing spot with", missed_with/1e3, "km")
-    print("Parachute deployed at", parachute_deployment_height, "m above the surface of the planet")
-    print("Final radial velocity:", np.dot(velocities[-2], positions[-2])/np.linalg.norm(positions[-2]), "m/s")
-
-if __name__ == "__main__":
-    wait_time = 5676.98
-    boost = -1000
-    landing_sequence = initiate_orbit()
-    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
-    land4real(landing_sequence, wait_time, boost, 86.13)
-
-    plt.show()
