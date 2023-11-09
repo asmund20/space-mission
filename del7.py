@@ -167,6 +167,7 @@ def landing_site_position(landing_site, t):
     omega = 1/system.rotational_periods[1]/60**2/24
     landing_site[2] = landing_site[2] + (t-landing_site[3])*omega
     landing_site[3] = t
+    return landing_site
 
 
 def initiate_orbit():
@@ -276,7 +277,7 @@ def trial_and_error(landing_sequence, wait_time, boost):
 
     t, position, velocity, drag_force, acceleration = simulate_landing(landing_sequence, 1000, A, wait_time, boost)
 
-    landing_site_position(desired_landing_spot, t[-1])
+    desired_landing_spot = landing_site_position(desired_landing_spot, t[-1])
 
     final_radial_velocity = np.dot(position[-1], velocity[-1])/np.linalg.norm(position[-1])
     landing_site_phi = np.angle(complex(position[-1,0], position[-1,1]))
@@ -286,10 +287,10 @@ def trial_and_error(landing_sequence, wait_time, boost):
     print("Missed desired landing spot with", missed_with/1e3, "km")
     
     print(final_radial_velocity)
-    plotting(t, position, velocity, np.linalg.norm(acceleration, axis=1), desired_landing_spot[2])
+    plot_prelim_traj(t, position, velocity, np.linalg.norm(acceleration, axis=1), desired_landing_spot[2])
 
 
-def plotting(t, position, velocity, acceleration, desired_landing_phi):
+def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi):
     radius = system.radii[1]*1e3
     A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
@@ -328,8 +329,11 @@ def plotting(t, position, velocity, acceleration, desired_landing_phi):
     plt.ylabel("y [km]")
     plt.legend()
 
+def plot_landing(t, pos, vel, v_r, v_t, a_r, alpha, phi_planned):
+    
 
-def land4real(landing_sequence, falltime, initiation_boost, parachute_area):
+
+def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desired_landing_spot):
 
     landing_sequence.fall(falltime)
     t, pos, v = landing_sequence.orient()
@@ -372,16 +376,33 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area):
 
     radial_velocities = []
     for pos, vel in zip(positions, velocities):
-        radial_velocities.append(np.dot(pos,vel)/np.linalg.norm(pos))
-    radial_velodities = np.array(radial_velocities)
+        radial_velocities.append(np.dot(pos,vel)*pos/np.linalg.norm(pos)**2)
+    radial_velocities = np.array(radial_velocities)
+    v_r = np.linalg.norm(radial_velocities, axis=1)
     
-    tangential_velocities = velocities-radial_velocities
-    angular_velocities = tangential_velocities/np.linalg.norm(positions, axis=1)
+    tangential_velocities = velocities - radial_velocities
+    v_t = np.linalg.norm(tangential_velocities, axis=1)
+    
+    angular_velocities = v_t/np.linalg.norm(positions, axis=1)
     accelerations = np.linalg.norm((velocities[1:]-velocities[:-1]), axis=1)/(time[1:]-time[:-1])
-    radial_accelerations = np.linalg.norm((radial_velocities[1:]-radial_velocities[:-1]), axis=1)/(time[1:]-time[:-1])
-    angular_accelerations = np.linalg.norm((angular_velocities[1:]-angular_velocities[:-1]), axis=1)/(time[1:]-time[:-1])
+    radial_accelerations = (v_r[1:]-v_r[:-1])/(time[1:]-time[:-1])
+    angular_accelerations = (angular_velocities[1:]-angular_velocities[:-1])/(time[1:]-time[:-1])
     landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
+    
+    desired_landing_spot = landing_site_position(desired_landing_spot, time[-1])
     diff_angle = desired_landing_spot[2]-landing_site_phi
-    missed_with = radius*diff_angle
+    missed_with = system.radii[1]*1e3*diff_angle
 
-    plotting(time[:-1], positions[:-1], velocities[:-1], accelerations, desired_landing_spot[2])
+    plot_landing(
+        time, positions, v_r, v_t, radial_accelerations,
+        angular_accelerations, desired_landing_spot[2] 
+    )
+if __name__ == "__main__":
+    wait_time = 5676.98
+    boost = -1000
+    desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
+    landing_sequence = initiate_orbit()
+    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
+    land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
+
+    plt.show()
