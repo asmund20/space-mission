@@ -286,10 +286,10 @@ def trial_and_error(landing_sequence, wait_time, boost):
     print("Missed desired landing spot with", missed_with/1e3, "km")
     
     print(final_radial_velocity)
-    plotting(t, position, velocity, drag_force, acceleration, desired_landing_spot[2])
+    plotting(t, position, velocity, np.linalg.norm(acceleration, axis=1), desired_landing_spot[2])
 
 
-def plotting(t, position, velocity, drag_force, acceleration, desired_landing_phi):
+def plotting(t, position, velocity, acceleration, desired_landing_phi):
     radius = system.radii[1]*1e3
     A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
@@ -311,7 +311,7 @@ def plotting(t, position, velocity, drag_force, acceleration, desired_landing_ph
 
     #acceleration-plot
     plt.figure()
-    plt.plot(t, np.linalg.norm(acceleration, axis=1))
+    plt.plot(t, acceleration)
     plt.title("lander acceleration")
     plt.xlabel("time [s]")
     plt.ylabel("acceleration [m/s²]")
@@ -369,6 +369,12 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area):
     positions = np.array(positions)
     velocities = np.array(velocities)
     time = np.array(time)
+    radial_velocities = np.tensordot(positions, velocities, axis=1)/np.linalg.norm(positions, axes=1)
+    tangential_velocities = velocities-radial_velocities
+    angular_velocities = tangential_velocities/np.linalg.norm(positions, axis=1)
+    accelerations = np.linalg.norm((velocities[1:]-velocities[:-1]), axis=1)/(time[1:]-time[:-1])
+    radial_accelerations = np.linalg.norm((radial_velocities[1:]-radial_velocities[:-1]), axis=1)/(time[1:]-time[:-1])
+    angular_accelerations = np.linalg.norm((angular_velocities[1:]-angular_velocities[:-1]), axis=1)/(time[1:]-time[:-1])
     
     landing_sequence.finish_video(radial_camera_offset=2e4)
     
@@ -379,20 +385,19 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area):
     diff_angle = desired_landing_spot[2]-landing_site_phi
     missed_with = radius*diff_angle
 
+    plotting(time[:-1], positions[:-1], velocities[:-1], accelerations, desired_landing_spot[2])
     plt.figure()
-    plt.scatter(radius/1e3*np.cos(desired_landing_spot[2]), radius/1e3*np.sin(desired_landing_spot[2]), label="desired landing-spot", color="green")
-    plt.plot(positions[:,0]/1e3, positions[:,1]/1e3, label="Lander", color="orange")
+    plt.plot(time[:-1], angular_accelerations)
+    plt.title("Angular acceleration")
+    plt.xlabel("t [s]")
+    plt.ylabel("angular acceleration [s⁻¹]")
 
-    angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
-    plt.fill(radius/1e3*np.cos(angle),radius/1e3*np.sin(angle), color="blue", label="Tvekne")
+    plt.figure()
+    plt.plot(time[:-1], radial_accelerations)
+    plt.title("Radial acceleration")
+    plt.xlabel("t [s]")
+    plt.ylabel("acceleration [m/s]")
 
-    plt.axis("equal")
-    plt.title("The landers trajectory and Tvekne")
-    plt.xlabel("x [km]")
-    plt.ylabel("y [km]")
-    plt.legend()
-    
-    
     print("Missed desired landing spot with", missed_with/1e3, "km")
     print("Parachute deployed at", parachute_deployment_height, "m above the surface of the planet")
     print("Final radial velocity:", np.dot(velocities[-2], positions[-2])/np.linalg.norm(positions[-2]), "m/s")
