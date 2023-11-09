@@ -378,7 +378,7 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     desired_landing_spot = landing_site_position(desired_landing_spot, time[-1])
     landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
     diff_angle = desired_landing_spot[2]-landing_site_phi
-    missed_with = system.radii[1]*1e3*diff_angle
+    missed_with = system.radii[1]*diff_angle
 
     print("Deployed parachute at", parachute_deployment_height, "m above the surface")
     print("Missed desired landing-spot with", missed_with, "km")
@@ -388,7 +388,7 @@ if __name__ == "__main__":
     boost = -1000
     desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
     landing_sequence = initiate_orbit()
-    trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
-    #land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
+    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
+    land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
 
     plt.show()
