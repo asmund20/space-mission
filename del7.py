@@ -325,7 +325,26 @@ def plot_landing(time, positions, velocities, phi_planned):
     accelerations = np.linalg.norm((velocities[1:]-velocities[:-1]), axis=1)/(time[1:]-time[:-1])
     radial_accelerations = (v_r[1:]-v_r[:-1])/(time[1:]-time[:-1])
     angular_accelerations = (angular_velocities[1:]-angular_velocities[:-1])/(time[1:]-time[:-1])
-    ...
+    
+    fig, axs = plt.subplots(ncols=2, sharex=True)
+    axs[0].plot(time, v_r, label='Radiell fart $v_r$')
+    axs[0].set_ylabel('Radiell fart [m/s]', fontsize=12)
+    axs[0].legend(fontsize=12)
+    
+    axs[1].plot(time, angular_velocities-system.rotational_periods[1]/(60**2*24), color='red', label='Rotasjon $\\frac{d\\phi}{dt}-\\Omega$')
+    axs[1].set_ylabel('Rotasjonshastighet [s^-1]', fontsize=12)
+    axs[1].legend(fontsize=12)
+    fig.supxlabel('Tid [s]')
+    
+    plt.show()
+    
+    plt.plot(time[:-1], accelerations, label='$a(t)$')
+    plt.ylabel('Akselerasjon [m/s^2]')
+    plt.xlabel('Tid [s]')
+    plt.legend(fontsize=12)
+    
+    plt.show()
+    
     
 
 
@@ -370,11 +389,10 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     velocities = np.array(velocities)
     time = np.array(time)
 
-    
-
     plot_landing(
         time, positions, velocities, desired_landing_spot[2] 
     )
+    
     desired_landing_spot = landing_site_position(desired_landing_spot, time[-1])
     landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
     diff_angle = desired_landing_spot[2]-landing_site_phi
@@ -388,7 +406,7 @@ if __name__ == "__main__":
     boost = -1000
     desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
     landing_sequence = initiate_orbit()
-    trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
-    #land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
+    # trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
+    land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
 
     plt.show()
