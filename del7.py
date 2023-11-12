@@ -14,6 +14,7 @@ from numba import jit
 import tqdm
 import copy
 import sys
+import os
 
 seed = 59529
 system = SolarSystem(seed)
@@ -138,19 +139,11 @@ def initiate_circular_orbit():
 
     return land, pos_planets
 
-
-# calculates the spherical coordinate for a point on Tvekne's surface after a time.
-# takes the current position (theta, phi) and the time after which to return the position.
-# returns: theta, phi
-
-
 #landing_site is [r, theta, phi, t]
 def landing_site_position(landing_site, t):
     omega = 1/system.rotational_periods[1]/60**2/24
     landing_site[2] = landing_site[2] + (t-landing_site[3])*omega
     landing_site[3] = t
-    return landing_site
-
 
 def initiate_orbit():
     landing_sequence, planet_positions = initiate_circular_orbit()
@@ -199,7 +192,7 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
     
     g = lambda r: - cs.G * system.masses[1]*cs.m_sun * r /np.linalg.norm(r)**3
 
-    drag = lambda r, v_drag, rho, A: -1/2 * rho * A * np.linalg.norm(v_drag) * v_drag
+    drag = lambda v_drag, rho, A: -1/2 * rho * A * np.linalg.norm(v_drag) * v_drag
 
     w = lambda r: np.cross(np.array([0, 0, 1/system.rotational_periods[1]/(60**2*24)]), r)
 
@@ -216,8 +209,10 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
     count = 0
 
+    os.system("clear")
+
     print("starting integration")
-    while np.linalg.norm(pos) > system.radii[1]*1e3 and count < 1e6:
+    while np.linalg.norm(pos) > system.radii[1]*1e3:
 
         if np.linalg.norm(pos)-system.radii[1]*1e3 <= deploy_parachute and not deployed_parachute:
             area = max(area, parachute_area)
@@ -233,13 +228,13 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
             dt = 1e-2
             final_dt = True
 
-        current_drag = drag(pos, v-w(pos), density(np.linalg.norm(pos)), area)
+        current_drag = drag(v-w(pos), density(np.linalg.norm(pos)), area)
         
         if np.linalg.norm(current_drag) > 2.5e5 and deployed_parachute:
             raise RuntimeError(f"Parachute broke due to too high of a force of {np.linalg.norm(current_drag)/2.5e5:.6f} times its capacity")
 
         a = g(pos) + current_drag/mission.lander_mass
-        d.append(np.linalg.norm(drag(pos, v-w(pos), density(np.linalg.norm(pos)), parachute_area)))
+        d.append(np.linalg.norm(current_drag))
 
         v += a*dt
         pos += v*dt
@@ -252,14 +247,14 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
     return np.array(times), np.array(positions), np.array(velocities), d, np.array(accelerations)
 
-def trial_and_error(landing_sequence, wait_time, boost):
+def trial_and_error(landing_sequence, wait_time, boost, desired_landing_spot):
     radius = system.radii[1]*1e3
-    desired_landing_spot = np.array([radius, np.pi/2, 0.44028 * np.pi, 163850])
+    desired_landing_spot = desired_landing_spot.copy()
     A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
     t, position, velocity, drag_force, acceleration = simulate_landing(landing_sequence, 1000, A, wait_time, boost)
 
-    desired_landing_spot = landing_site_position(desired_landing_spot, t[-1])
+    landing_site_position(desired_landing_spot, t[-1])
 
     final_radial_velocity = np.dot(position[-1], velocity[-1])/np.linalg.norm(position[-1])
     landing_site_phi = np.angle(complex(position[-1,0], position[-1,1]))
@@ -267,35 +262,34 @@ def trial_and_error(landing_sequence, wait_time, boost):
     missed_with = radius*diff_angle
 
     print("Missed desired landing spot with", missed_with/1e3, "km")
-    
-    print(final_radial_velocity)
-    plot_prelim_traj(t, position, velocity, np.linalg.norm(acceleration, axis=1), desired_landing_spot[2])
+    print("Hitting the surface with a radial velocity of", final_radial_velocity, "m/s")
+    plot_prelim_traj(t, position, velocity, np.linalg.norm(acceleration, axis=1), desired_landing_spot[2], A)
 
 
-def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi):
+def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi, A):
     radius = system.radii[1]*1e3
-    A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
+    #A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
-    print("parachute_area: ", A)
+    print("parachute_area:", A)
     print("Final acceleration:", acceleration[-1]) 
 
     # height-plot
     plt.plot(t, np.linalg.norm(position, axis=1)/1e3-radius/1e3)
-    plt.title("Distance from the surface of Tvekne")
+    plt.title("Simulated distance from the surface of Tvekne")
     plt.xlabel("time [s]")
     plt.ylabel("height [km]")
 
     # speed-plot
     plt.figure()
     plt.plot(t, np.linalg.norm(velocity, axis=1))
-    plt.title("Lander speed")
+    plt.title("Simuated lander speed")
     plt.xlabel("time [s]")
     plt.ylabel("speed [m/s]")
 
     #acceleration-plot
     plt.figure()
     plt.plot(t, acceleration)
-    plt.title("lander acceleration")
+    plt.title("Simuated lander acceleration")
     plt.xlabel("time [s]")
     plt.ylabel("acceleration [m/s²]")
 
@@ -306,10 +300,11 @@ def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi):
     angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
     plt.fill(radius/1e3*np.cos(angle),radius/1e3*np.sin(angle), color="blue", label="Tvekne")
     plt.axis("equal")
-    plt.title("The landers trajectory and Tvekne")
+    plt.title("The simuated lander trajectory and Tvekne")
     plt.xlabel("x [km]")
     plt.ylabel("y [km]")
     plt.legend()
+    plt.show()
 
 def plot_landing(time, positions, velocities, phi_planned):
     radial_velocities = []
@@ -344,11 +339,9 @@ def plot_landing(time, positions, velocities, phi_planned):
     plt.legend(fontsize=12)
     
     plt.show()
-    
-    
-
 
 def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desired_landing_spot):
+    desired_landing_spot = desired_landing_spot.copy()
 
     landing_sequence.fall(falltime)
     t, pos, v = landing_sequence.orient()
@@ -392,8 +385,8 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     plot_landing(
         time, positions, velocities, desired_landing_spot[2] 
     )
-    
-    desired_landing_spot = landing_site_position(desired_landing_spot, time[-1])
+
+    landing_site_position(desired_landing_spot, time[-1])
     landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
     diff_angle = desired_landing_spot[2]-landing_site_phi
     missed_with = system.radii[1]*diff_angle
@@ -406,11 +399,5 @@ if __name__ == "__main__":
     boost = -1000
     desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
     landing_sequence = initiate_orbit()
-<<<<<<< HEAD
-    # trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
-=======
-    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
->>>>>>> 5471ef3015ee12e96bde01569cc5aca286c50393
+    trial_and_error(landing_sequence, wait_time,  boost, desired_landing_spot)
     land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
-
-    plt.show()
