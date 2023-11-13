@@ -40,3 +40,5 @@ print(f'Tvekne eksentrisitet: {system.eccentricities[1]}')
 
 print(f"Banefart Zeron: {np.linalg.norm(system.initial_velocities[:,0])} AU/yr")
 print(f"Banefart Tvekne: {np.linalg.norm(system.initial_velocities[:,1])} AU/yr")
+print(f"Rotasjonshastighet Tvekne: {1/(system.rotational_periods[1]*60**2*24)} 1/s")
+print(f"Lander area: {mission.lander_area} m^2")

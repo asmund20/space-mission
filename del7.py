@@ -141,6 +141,7 @@ def initiate_circular_orbit():
 
 #landing_site is [r, theta, phi, t]
 def landing_site_position(landing_site, t):
+    """Takes a landing position defined by an array with [r, theta, phi, t] and modifies the time-dependent coordinate phi tho match the desired time t"""
     omega = 1/system.rotational_periods[1]/60**2/24
     landing_site[2] = landing_site[2] + (t-landing_site[3])*omega
     landing_site[3] = t
@@ -154,7 +155,7 @@ def initiate_orbit():
     landing_sequence.boost(-0.8*v)
 
     # time-step in which we check if the spacecrft is closer than the desired distance
-    dt = 100
+    dt = 100 #s
     # the distance we want to the surface of the planet
     desired_h = 1e6 #m
     desired_r = system.radii[1]*1e3+desired_h
@@ -181,19 +182,26 @@ def initiate_orbit():
 # deploy_parachute is the height above the ground to deploy the parachute.
 # initiate_at is the time in seconds to wait before the initiation_boost is performed
 def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiate_at, initiation_boost):
+    """Takes a landing sequence, the height to deploy the parachute, thea parachute area and the time and magnitude of the boost to start the landing.
+    Does noe change the landing_sequence-instance"""
     landing_sequence = copy.deepcopy(landing_sequence)
+    # orbit until the specified time
     landing_sequence.fall(initiate_at)
 
     t, pos, v = landing_sequence.orient()
 
+    # perform the specified boost. the boost should be a negeative number in order to enter the atmosphere
     v += initiation_boost * v/np.linalg.norm(v)
 
     area = mission.lander_area
     
+    # the gravitational field
     g = lambda r: - cs.G * system.masses[1]*cs.m_sun * r /np.linalg.norm(r)**3
 
+    # the drag force
     drag = lambda v_drag, rho, A: -1/2 * rho * A * np.linalg.norm(v_drag) * v_drag
 
+    # the velocity of the atmosphere, where we assume that angular velocity of the atmosphere is the same as for the planet
     w = lambda r: np.cross(np.array([0, 0, 1/system.rotational_periods[1]/(60**2*24)]), r)
 
     positions = [pos.copy()]
@@ -202,11 +210,11 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
     accelerations = [np.array([0, 0, 0])]
     d = [0]
 
-    dt = 0.1
+    dt = 0.1 #s
     deployed_parachute = False
     final_dt = False
-    #deployed_parachute = True
 
+    # used to increase dt after the deployment of the parachute
     count = 0
 
     os.system("clear")
@@ -214,28 +222,34 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
     print("starting integration")
     while np.linalg.norm(pos) > system.radii[1]*1e3:
 
+        # if the lander is at the desired deployment height and the parachute is not already deployed, deploy parachute
         if np.linalg.norm(pos)-system.radii[1]*1e3 <= deploy_parachute and not deployed_parachute:
             area = max(area, parachute_area)
             
             print(f"Deployed parachute at t: {t}, h: {np.linalg.norm(pos)-system.radii[1]*1e3}, v: {np.linalg.norm(v)}")
             deployed_parachute = True
-            dt = 1e-4
+            dt = 1e-4 #s
 
+        # count steps after the parachute deployed
         if deployed_parachute and not final_dt:
             count += 1
 
+        # if the parachute is deployed and the time step is 1e-4 and the count is big, increase timestep
         if count and count > 1e4 and not final_dt:
-            dt = 1e-2
+            dt = 1e-2 #s
             final_dt = True
 
         current_drag = drag(v-w(pos), density(np.linalg.norm(pos)), area)
         
+        # if the drag force from the parachute is too great, it breaks
         if np.linalg.norm(current_drag) > 2.5e5 and deployed_parachute:
             raise RuntimeError(f"Parachute broke due to too high of a force of {np.linalg.norm(current_drag)/2.5e5:.6f} times its capacity")
 
+        # the lander acceleration
         a = g(pos) + current_drag/mission.lander_mass
         d.append(np.linalg.norm(current_drag))
 
+        # integration with euler-cromer
         v += a*dt
         pos += v*dt
         t += dt
@@ -248,12 +262,16 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
     return np.array(times), np.array(positions), np.array(velocities), d, np.array(accelerations)
 
 def trial_and_error(landing_sequence, wait_time, boost, desired_landing_spot):
+    """Takes a landing sequence a time to wait before boosting, a boost and a spot to aim for.
+    Does not change the landing_sequence instance or the landing_spot array"""
     radius = system.radii[1]*1e3
     desired_landing_spot = desired_landing_spot.copy()
+    # the analytical expression for the parachute area needed to achieve a soft landing
     A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
     t, position, velocity, drag_force, acceleration = simulate_landing(landing_sequence, 1000, A, wait_time, boost)
 
+    # calculates the landing site position at the time of touchdown
     landing_site_position(desired_landing_spot, t[-1])
 
     final_radial_velocity = np.dot(position[-1], velocity[-1])/np.linalg.norm(position[-1])
@@ -267,8 +285,8 @@ def trial_and_error(landing_sequence, wait_time, boost, desired_landing_spot):
 
 
 def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi, A):
+    """Plotting the height, speed, acceleration and position"""
     radius = system.radii[1]*1e3
-    #A = 2*cs.G*system.masses[1]*cs.m_sun*mission.lander_mass/density(radius)/radius**2/3**2
 
     print("parachute_area:", A)
     print("Final acceleration:", acceleration[-1]) 
@@ -307,6 +325,7 @@ def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi, A
     plt.show()
 
 def plot_landing(time, positions, velocities, phi_planned):
+    """Plotting the radial velocity, angular velocity and acceleration."""
     radial_velocities = []
     for pos, vel in zip(positions, velocities):
         radial_velocities.append(np.dot(pos,vel)*pos/np.linalg.norm(pos)**2)
@@ -354,7 +373,7 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     
     landing_sequence.adjust_parachute_area(parachute_area)
     
-    dt = 0.1
+    dt = 0.1 #s
     h = 1000
     positions = []
     velocities = []
@@ -370,7 +389,7 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     parachute_deployment_height = np.linalg.norm(pos)-system.radii[1]*1e3
     landing_sequence.deploy_parachute()
 
-    dt = 1
+    dt = 1 #s
     while np.linalg.norm(pos) > system.radii[1]*1e3:
         landing_sequence.fall(dt)
         t, pos, v = landing_sequence.orient()
