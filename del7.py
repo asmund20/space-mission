@@ -281,35 +281,35 @@ def plot_prelim_traj(t, position, velocity, acceleration, desired_landing_phi):
 
     # height-plot
     plt.plot(t, np.linalg.norm(position, axis=1)/1e3-radius/1e3)
-    plt.title("Distance from the surface of Tvekne")
-    plt.xlabel("time [s]")
-    plt.ylabel("height [km]")
+    plt.title("Høyde over bakken (simulert)", fontsize=12)
+    plt.xlabel("Tid [s]", fontsize=12)
+    plt.ylabel("Høyde [km]", fontsize=12)
 
     # speed-plot
     plt.figure()
     plt.plot(t, np.linalg.norm(velocity, axis=1))
-    plt.title("Lander speed")
-    plt.xlabel("time [s]")
-    plt.ylabel("speed [m/s]")
+    plt.title("Enhetens totalfart (simulert)", fontsize=12)
+    plt.xlabel("Tid [s]", fontsize=12)
+    plt.ylabel("Fart [m/s]", fontsize=12)
 
     #acceleration-plot
     plt.figure()
     plt.plot(t, acceleration)
-    plt.title("lander acceleration")
-    plt.xlabel("time [s]")
-    plt.ylabel("acceleration [m/s²]")
+    plt.title("Landingsenhetens akselerasjon (simulert)", fontsize=12)
+    plt.xlabel("Tid [s]", fontsize=12)
+    plt.ylabel("Akselerasjon [m/s²]", fontsize=12)
 
     # position-plot
     plt.figure()
-    plt.scatter(radius/1e3*np.cos(desired_landing_phi), radius/1e3*np.sin(desired_landing_phi), label="desired landing-spot", color="green")
-    plt.plot(position[:,0]/1e3, position[:,1]/1e3, label="Lander", color="orange")
     angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
     plt.fill(radius/1e3*np.cos(angle),radius/1e3*np.sin(angle), color="blue", label="Tvekne")
+    plt.scatter(radius/1e3*np.cos(desired_landing_phi), radius/1e3*np.sin(desired_landing_phi), label="Planlagt landingspunkt", color="red")
+    plt.plot(position[:,0]/1e3, position[:,1]/1e3, label="Landingsenhetens bane", color="orange")
     plt.axis("equal")
-    plt.title("The landers trajectory and Tvekne")
-    plt.xlabel("x [km]")
-    plt.ylabel("y [km]")
-    plt.legend()
+    plt.title("Preliminær bane", fontsize=12)
+    plt.xlabel("x [km]", fontsize=12)
+    plt.ylabel("y [km]", fontsize=12)
+    plt.legend(fontsize=12)
 
 def plot_landing(time, positions, velocities, phi_planned):
     radial_velocities = []
@@ -317,6 +317,7 @@ def plot_landing(time, positions, velocities, phi_planned):
         radial_velocities.append(np.dot(pos,vel)*pos/np.linalg.norm(pos)**2)
     radial_velocities = np.array(radial_velocities)
     v_r = np.linalg.norm(radial_velocities, axis=1)
+    r = np.linalg.norm(positions, axis=1)
     
     tangential_velocities = velocities - radial_velocities
     v_t = np.linalg.norm(tangential_velocities, axis=1)
@@ -326,8 +327,24 @@ def plot_landing(time, positions, velocities, phi_planned):
     radial_accelerations = (v_r[1:]-v_r[:-1])/(time[1:]-time[:-1])
     angular_accelerations = (angular_velocities[1:]-angular_velocities[:-1])/(time[1:]-time[:-1])
     
+    landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
+    radius = system.radii[1]
+    
+    plt.figure()
+    angle = np.linspace(0, 2*np.pi, 1000, endpoint=False)
+    plt.fill(radius*np.cos(angle),radius*np.sin(angle), color="blue", label="Tvekne")
+    plt.scatter(radius*np.cos(phi_planned), radius*np.sin(phi_planned), label="Planlagt landingspunkt", color="red")
+    plt.plot(positions[:,0]/1e3, positions[:,1]/1e3, label="Landingsenhetens bane", color="orange")
+    plt.axis("equal")
+    plt.title('Banen fulgt av landingsenheten', fontsize=12)
+    plt.xlabel("x [km]", fontsize=12)
+    plt.ylabel("y [km]", fontsize=12)
+    plt.legend(fontsize=12)
+    
+    plt.show()
+    
     fig, axs = plt.subplots(ncols=2, sharex=True)
-    axs[0].plot(time, v_r, label='Radiell fart $v_r$')
+    axs[0].plot(time, v_r, label='Radiell fart $v_r(t)$')
     axs[0].set_ylabel('Radiell fart [m/s]', fontsize=12)
     axs[0].legend(fontsize=12)
     
@@ -338,9 +355,19 @@ def plot_landing(time, positions, velocities, phi_planned):
     
     plt.show()
     
-    plt.plot(time[:-1], accelerations, label='$a(t)$')
-    plt.ylabel('Akselerasjon [m/s^2]')
-    plt.xlabel('Tid [s]')
+    fig, ax = plt.subplots(1)
+    ax.plot(r/1e3, v_r, label='Radiell fart $v_r(r)$')
+    ax.grid(True)
+    ax.invert_xaxis()
+    ax.set_xlabel('Avstand $r$ fra sentrum av Tvekne [km]', fontsize=12)
+    ax.set_ylabel('Radiell fart [m/s]', fontsize=12)
+    ax.legend(fontsize=12)
+    
+    plt.show()
+    
+    plt.plot(time[:-1], accelerations, color='orange', label='Enhetens akselerasjon $a(t)$')
+    plt.ylabel('Akselerasjon [m/s^2]', fontsize=12)
+    plt.xlabel('Tid [s]', fontsize=12)
     plt.legend(fontsize=12)
     
     plt.show()
@@ -378,6 +405,18 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     landing_sequence.deploy_parachute()
 
     dt = 1
+    while np.linalg.norm(pos) > system.radii[1]*1e3 + h/2:
+        landing_sequence.fall(dt)
+        t, pos, v = landing_sequence.orient()
+        positions.append(pos.copy())
+        velocities.append(v.copy())
+        time.append(t)
+    
+    pic_angle = np.angle(complex(pos[0], pos[1]))
+    landing_sequence.look_in_fixed_direction(azimuth_angle=np.pi/2 - pic_angle)
+    landing_sequence.take_picture('landing_pic.xml')
+    landing_sequence.look_in_direction_of_planet(1)
+    
     while np.linalg.norm(pos) > system.radii[1]*1e3:
         landing_sequence.fall(dt)
         t, pos, v = landing_sequence.orient()
@@ -400,17 +439,16 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
 
     print("Deployed parachute at", parachute_deployment_height, "m above the surface")
     print("Missed desired landing-spot with", missed_with, "km")
+    
+
 
 if __name__ == "__main__":
     wait_time = 5676.98
     boost = -1000
     desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
     landing_sequence = initiate_orbit()
-<<<<<<< HEAD
     # trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
-=======
-    #trial_and_error(copy.deepcopy(landing_sequence), wait_time,  boost)
->>>>>>> 5471ef3015ee12e96bde01569cc5aca286c50393
+
     land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
 
     plt.show()
