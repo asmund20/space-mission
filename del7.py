@@ -379,23 +379,32 @@ def plot_landing(time, positions, velocities, phi_planned):
 
 def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desired_landing_spot):
     desired_landing_spot = desired_landing_spot.copy()
-
+    # Fall until desired launch time
     landing_sequence.fall(falltime)
     t, pos, v = landing_sequence.orient()
-
+    
+    # Slow down
     dv = initiation_boost * v/np.linalg.norm(v)
+    # Launch lander
     landing_sequence.launch_lander(dv)
     
+    # Start video
     landing_sequence.look_in_direction_of_planet(1)
     landing_sequence.start_video()
     
+    # Set parachute area
     landing_sequence.adjust_parachute_area(parachute_area)
     
+    # Timestep
     dt = 0.1 #s
-    h = 1000
+    # Height to deploy parachute
+    h = 1000 #m
+    
     positions = []
     velocities = []
     time = []
+    
+    # Fall until height h over the ground
     while np.linalg.norm(pos) > system.radii[1]*1e3 + h:
         landing_sequence.fall(dt)
         t, pos, v = landing_sequence.orient()
@@ -407,7 +416,10 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     parachute_deployment_height = np.linalg.norm(pos)-system.radii[1]*1e3
     landing_sequence.deploy_parachute()
 
+    # Bigger timestep
     dt = 1 #s
+    
+    # Fall until 500m above ground
     while np.linalg.norm(pos) > system.radii[1]*1e3 + h/2:
         landing_sequence.fall(dt)
         t, pos, v = landing_sequence.orient()
@@ -415,11 +427,13 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
         velocities.append(v.copy())
         time.append(t)
     
+    # Take picture pointing westwards
     pic_angle = np.angle(complex(pos[0], pos[1]))
     landing_sequence.look_in_fixed_direction(azimuth_angle=np.pi/2 - pic_angle)
     landing_sequence.take_picture('landing_pic.xml')
     landing_sequence.look_in_direction_of_planet(1)
     
+    # Fall until ground
     while np.linalg.norm(pos) > system.radii[1]*1e3:
         landing_sequence.fall(dt)
         t, pos, v = landing_sequence.orient()
@@ -427,10 +441,12 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
         velocities.append(v.copy())
         time.append(t)
     
+    # Convert to arrays
     positions = np.array(positions)
     velocities = np.array(velocities)
     time = np.array(time)
-
+    
+    # Plot
     plot_landing(
         time, positions, velocities, desired_landing_spot[2] 
     )
@@ -438,6 +454,7 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
     landing_site_position(desired_landing_spot, time[-1])
     landing_site_phi = np.angle(complex(positions[-1,0], positions[-1,1]))
     diff_angle = desired_landing_spot[2]-landing_site_phi
+    # How much we missed by
     missed_with = system.radii[1]*diff_angle
 
     print("Deployed parachute at", parachute_deployment_height, "m above the surface")
@@ -446,9 +463,15 @@ def land4real(landing_sequence, falltime, initiation_boost, parachute_area, desi
 
 
 if __name__ == "__main__":
-    wait_time = 5676.98
-    boost = -1000
+    # How long to wait before launch of lander
+    wait_time = 5676.98 # s
+    # Boost magnitude
+    boost = -1000 # m/s
+    # Target
     desired_landing_spot = np.array([system.radii[1]*1e3, np.pi/2, 0.44028 * np.pi, 163850])
+    # Start orbit
     landing_sequence = initiate_orbit()
+    # Simulate landing
     trial_and_error(landing_sequence, wait_time,  boost, desired_landing_spot)
+    # Real landing
     land4real(landing_sequence, wait_time, boost, 86.13, desired_landing_spot)
