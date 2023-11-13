@@ -89,14 +89,6 @@ def initiate_circular_orbit():
     unstable_orbit = SpaceMissionShortcuts(mission, [code_unstable_orbit])
     ################
 
-    # Read planet positions and velocitites from part 2
-    pos_planets = np.load('positions.npy')
-    vel_planets = np.load("velocities.npy")
-
-    # Read rocket altitude from launch in part 1
-    rocket_altitude = np.load('rocket_position.npy')
-    launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)))
-
     star_mass = system.star_mass
     planet_masses = system.masses
     
@@ -137,7 +129,7 @@ def initiate_circular_orbit():
 
     land.boost(dv_inj)
 
-    return land, pos_planets
+    return land
 
 #landing_site is [r, theta, phi, t]
 def landing_site_position(landing_site, t):
@@ -147,7 +139,7 @@ def landing_site_position(landing_site, t):
     landing_site[3] = t
 
 def initiate_orbit():
-    landing_sequence, planet_positions = initiate_circular_orbit()
+    landing_sequence= initiate_circular_orbit()
     landing_sequence.fall(100)
     _, _, v = landing_sequence.orient()
 
