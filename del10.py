@@ -52,4 +52,24 @@ T_c = ss_temp + 2*np.pi/3*cst.G*density*1.75*cst.m_p/cst.k_B*ss_radius**2*1e6
 
 print(f"Core temperature {T_c:.3g} K")
 
+X_H = 0.745
+X_CNO = 0.002
+
+eps_0pp = 1.08e-12
+eps_0CNO = 8.24e-31
+
+e_pp = eps_0pp * (X_H**2) * density * (T_c/1e6)**4
+e_CNO = eps_0CNO * X_H * X_CNO * density * (T_c/1e6)**20
+
+e = e_pp + e_CNO
+print(f'Reaction-rate core: {e:.3g} W/kg')
+
+core_mass = density * 4*np.pi*(0.2*ss_radius*1e3)**3
+print(f'Core mass: {core_mass:.3g} kg')
+
+lum_core = e*core_mass
+print(f'Luminosity estimate from reactions in core: {lum_core:.3g} W')
+print(f'Luminosity in L_sun: {lum_core/cst.L_sun:.3g} L_sun')
+print(f'T_eff: {(lum_core/4/np.pi/(ss_radius*1e3)**2/cst.sigma)**(1/4):.3g} K')
+
 plt.show()
