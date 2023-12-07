@@ -3,6 +3,7 @@ import numpy as np
 from ast2000tools.star_population import StarPopulation
 from ast2000tools.solar_system import SolarSystem
 import ast2000tools.constants as cst
+import scipy.constants as cs
 
 seed = 59529
 system = SolarSystem(seed)
@@ -71,5 +72,14 @@ lum_core = e*core_mass
 print(f'Luminosity estimate from reactions in core: {lum_core:.3g} W')
 print(f'Luminosity in L_sun: {lum_core/cst.L_sun:.3g} L_sun')
 print(f'T_eff: {(lum_core/4/np.pi/(ss_radius*1e3)**2/cst.sigma)**(1/4):.3g} K')
+
+m_wd = 1.4*ss_mass/8
+R_wd = (3/2/np.pi)**(4/3)*cs.h**2/20/cs.m_e/cst.G*(1/2/cs.m_p)**(5/3)*(m_wd*cst.m_sun)**(-1/3)
+density_wd = m_wd*cst.m_sun/(4/3*np.pi*R_wd**3)
+
+print(f"Mass WD {m_wd} m_sun")
+print(f"Radius WD {R_wd*1e-3} km")
+print(f"Density WD {density_wd:.4e} kg/m³")
+print(f"En liter med hvit dverg veier {density_wd*1e-3:.4e} kg")
 
 plt.show()
