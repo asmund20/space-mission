@@ -41,4 +41,15 @@ ax.set_ylabel(r'Luminosity [$L_\odot$]')
 ax.set_yscale('log')
 ax.set_ylim(1e-4, 1e6)
 
+print("SS luminosity", ss_lum, "L_sun")
+print(f"SS radius {ss_radius:.3e} km")
+print(f"SS mass {ss_mass} M_sun")
+print(f"SS surface temp {ss_temp} K")
+density = ss_mass*cst.m_sun/(4/3*np.pi*ss_radius**3*1e9)
+print(f"SS density {ss_mass*cst.m_sun/(4/3*np.pi*ss_radius**3*1e9)} kg/m³")
+
+T_c = ss_temp + 2*np.pi/3*cst.G*density*1.75*cst.m_p/cst.k_B*ss_radius**2*1e6
+
+print(f"Core temperature {T_c:.3g} K")
+
 plt.show()
