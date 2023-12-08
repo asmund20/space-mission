@@ -18,9 +18,12 @@ import os
 
 seed = 59529
 system = SolarSystem(seed)
+system.verbose = False
 mission = SpaceMission(seed)
+mission.verbose = False
 np.random.seed(seed)
 
+# from part 6
 def temperature(r):
     """Temperature as a function of distance from center r"""
     # Mean molecular mass
@@ -46,6 +49,7 @@ def temperature(r):
     
     return T
 
+# from part 6
 def pressure(r):
     """Pressure as a function of distance from center r"""
     # Mean molecular mass
@@ -74,6 +78,7 @@ def pressure(r):
     
     return p
 
+# from part 6
 def density(r):
     """Density as a function of distance from center r"""
     # Mean molecular mass
@@ -131,14 +136,14 @@ def initiate_circular_orbit():
 
     return land
 
-#landing_site is [r, theta, phi, t]
 def landing_site_position(landing_site, t):
-    """Takes a landing position defined by an array with [r, theta, phi, t] and modifies the time-dependent coordinate phi tho match the desired time t"""
+    """Takes a landing position defined by an array with [r, theta, phi, t] and modifies the time-dependent coordinate phi to match the desired time t"""
     omega = 1/system.rotational_periods[1]/60**2/24
     landing_site[2] = landing_site[2] + (t-landing_site[3])*omega
     landing_site[3] = t
 
 def initiate_orbit():
+    """Initiates a low circular orbit. Returns the landing sequence"""
     landing_sequence= initiate_circular_orbit()
     landing_sequence.fall(100)
     _, _, v = landing_sequence.orient()
@@ -163,7 +168,7 @@ def initiate_orbit():
     e_theta = np.array([-p[1]/np.linalg.norm(p), p[0]/np.linalg.norm(p), 0])
     dv_inj = e_theta*v_stable - v
 
-    # making sure that te direction of travel stays the same, for relism-purposes
+    # making sure that the direction of travel stays the same, for relism-purposes
     if np.linalg.norm(dv_inj) > np.linalg.norm(v):
         dv_inj = -e_theta*v_stable-v
 
@@ -171,8 +176,6 @@ def initiate_orbit():
 
     return landing_sequence
 
-# deploy_parachute is the height above the ground to deploy the parachute.
-# initiate_at is the time in seconds to wait before the initiation_boost is performed
 def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiate_at, initiation_boost):
     """Takes a landing sequence, the height to deploy the parachute, thea parachute area and the time and magnitude of the boost to start the landing.
     Does noe change the landing_sequence-instance"""
@@ -220,6 +223,7 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
             
             print(f"Deployed parachute at t: {t}, h: {np.linalg.norm(pos)-system.radii[1]*1e3}, v: {np.linalg.norm(v)}")
             deployed_parachute = True
+            # we need higher precision here due to to higher force
             dt = 1e-4 #s
 
         # count steps after the parachute deployed
@@ -228,6 +232,7 @@ def simulate_landing(landing_sequence, deploy_parachute, parachute_area, initiat
 
         # if the parachute is deployed and the time step is 1e-4 and the count is big, increase timestep
         if count and count > 1e4 and not final_dt:
+            # one second after deploying the parachute, the acceleration should be quite low and we can increase the timestep again
             dt = 1e-2 #s
             final_dt = True
 

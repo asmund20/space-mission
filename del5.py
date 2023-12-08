@@ -17,7 +17,9 @@ import numpy as np
 
 seed = 59529
 system = SolarSystem(seed)
+system.verbose = False
 mission = SpaceMission(seed)
+mission.verbose = False
 
 ### SHORTCUT ###
 code_unstable_orbit = 67311
@@ -37,6 +39,7 @@ launch_duration = ut.s_to_yr(1e-3*(len(rocket_altitude)))
 star_mass = system.star_mass
 planet_masses = system.masses
 
+# setup for interpolation
 timesteps_planets = len(pos_planets[0,0])
 known_times = np.linspace(0, timesteps_planets*1e-4, timesteps_planets)
 
@@ -150,7 +153,7 @@ def get_launch_parameters():
 
 def test_trajectory(travel_start_time, position, velocity, travel_duration, plot=False, plot_system=False, trajectory_label="Planlagt bane"):
     """
-    Tests if preliminary trajectory plan i successful.
+    Tests if preliminary trajectory plan is successful.
     -------------------------------------------------
     Inputs:
         travel_start_time - initial time of trajectory
@@ -162,16 +165,24 @@ def test_trajectory(travel_start_time, position, velocity, travel_duration, plot
     Returns:
         position - final position of probe
     """
+    # the number of points we want to save for plotting
     N = 1000
+    # the positions
     p = np.zeros((N,2))
+    # initial condition
     p[0] = position
+    # the velocities
     v = np.zeros((N,2))
+    # initial condition
     v[0] = velocity
+    # timestep in the integration
     trajectory_dt = 1e-5
     t = travel_start_time
     for i in range(N-1):
+        # integrates for a thousandth of the travel_duration and stores the results
         t, p[i+1], v[i+1] = trajectory(t, p[i], v[i], int(travel_duration/N/trajectory_dt), trajectory_dt)
 
+    # printing and plotting
     position = p[-1]
     velocity = v[-1]
     rocket_from_tvekne = position-pos_planets[:,1,int((t)/1e-4)]
@@ -230,7 +241,7 @@ def plan_trajectory(plot=False, plot_system=False):
     theta += 0.111
     travel_duration += 0.8493
 
-    # Simulate launch
+    # Simulate launch and travel
     r, vf, r0, theta0 = sim_launch(launch_time, theta)
     travel_start_time = launch_time + launch_duration
     endpoint = test_trajectory(travel_start_time, r[-1], vf, travel_duration, plot, plot_system)
@@ -348,6 +359,7 @@ def orbit_analysis(pos, vel, land):
     """
     r = np.linalg.norm(pos)
     v = np.linalg.norm(vel)
+    # unit vector
     e_theta = -np.cross(pos, np.array([0,0,1]))/r
     v_theta = np.dot(vel, e_theta)
     v_r = np.linalg.norm(vel-e_theta*v_theta)
@@ -366,24 +378,33 @@ def orbit_analysis(pos, vel, land):
     m_2 = cs.m_sun*system.masses[1]
     M = m_1 + m_2
     mu_hat = m_1*m_2/M
+    # h = L/m
     h = r*v_theta
     p = h**2/M/cs.G
     print(f'p = {p}')
     
+    # total energy
     E = 1/2*mu_hat*v**2 - cs.G*M*mu_hat/r
     print(f'E = {E}')
 
+    # exentrixity
     e = np.sqrt(2*E*p/mu_hat/cs.G/M+1)
     print(f'e = {e}')
 
+    # semi-major axis
     a = p/(1-e**2)
+    # semi-minor axis
     b = a*np.sqrt(1-e**2)
+    # period
     P = 2*np.pi*a*b/h
     print(f'a = {a}m\nb = {b}m\nP = {P}s')
 
+    # the angle relative to the periapsis
     f = np.arccos((p-r)/e/r)
+    # see the article, a lot of explanation needed here
     if v_r * v_theta < 0:
         f = -f
+    # periapsis angle relative to the x-axis
     alpha = theta-f
 
     # Kepler orbit
