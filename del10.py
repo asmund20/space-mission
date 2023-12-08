@@ -25,6 +25,7 @@ r = stars.radii        # [R_sun]
 c = stars.colors
 s = np.maximum(1e3*(r - r.min())/(r.max() - r.min()), 1.0) # Make point areas proportional to star radii
 
+plt.style.use("dark_background")
 fig, ax = plt.subplots()
 ax.scatter(T, L, c=c, s=s, alpha=0.8, edgecolor='k', linewidth=0.05)
 ax.scatter(ss_temp, ss_lum, c='red', s=20)
