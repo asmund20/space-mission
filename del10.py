@@ -71,5 +71,6 @@ lum_core = e*core_mass
 print(f'Luminosity estimate from reactions in core: {lum_core:.3g} W')
 print(f'Luminosity in L_sun: {lum_core/cst.L_sun:.3g} L_sun')
 print(f'T_eff: {(lum_core/4/np.pi/(ss_radius*1e3)**2/cst.sigma)**(1/4):.3g} K')
+print(cst.G*0.44*cst.m_sun/(1882*1e3)**2)
 
 plt.show()
